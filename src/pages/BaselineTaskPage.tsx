@@ -25,7 +25,7 @@ export default function BaselineTaskPage() {
       <header className="flex-shrink-0 bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm text-slate-600">
           <Bot size={16} className="text-blue-600" />
-          <span className="font-medium">AI Literature Summary</span>
+          <span className="font-medium">AI Report Summary</span>
         </div>
         <span className="text-xs bg-slate-100 text-slate-500 rounded-full px-3 py-1 font-medium">
           Condition 1 · Baseline
@@ -53,7 +53,7 @@ export default function BaselineTaskPage() {
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-3 flex items-center gap-2">
             <Bot size={16} className="text-blue-200" />
             <h2 className="text-sm font-semibold text-white">
-              AI-Generated Literature Summary
+              AI-Generated Report Summary
             </h2>
           </div>
 
@@ -71,7 +71,7 @@ export default function BaselineTaskPage() {
 
           <div className="px-5 py-3 bg-slate-50 border-t border-slate-200 text-xs text-slate-500">
             <em>
-              Source: {scenario.documents[0].authors}. {scenario.documents[0].journal}. Citations
+              Source: {scenario.documents[0].authors} — {scenario.documents[0].journal}. Citations
               shown as static labels — no interactive viewer available in this condition.
             </em>
           </div>

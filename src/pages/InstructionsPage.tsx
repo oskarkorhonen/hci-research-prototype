@@ -81,7 +81,7 @@ export default function InstructionsPage() {
             <ul className="text-sm text-slate-600 space-y-2">
               <li className="flex items-start gap-2">
                 <span className="mt-1 w-1.5 h-1.5 rounded-full bg-slate-400 flex-shrink-0" />
-                You will see an AI-generated summary of the literature. Read it carefully.
+                You will see an AI-generated summary of the report. Read it carefully.
               </li>
               <li className="flex items-start gap-2">
                 <span className="mt-1 w-1.5 h-1.5 rounded-full bg-slate-400 flex-shrink-0" />

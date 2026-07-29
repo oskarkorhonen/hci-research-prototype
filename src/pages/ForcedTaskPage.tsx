@@ -81,7 +81,7 @@ export default function ForcedTaskPage() {
       <header className="flex-shrink-0 bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between z-10">
         <div className="flex items-center gap-2 text-sm text-slate-600">
           <Bot size={16} className="text-violet-600" />
-          <span className="font-medium">AI Literature Summary</span>
+          <span className="font-medium">AI Report Summary</span>
           <span className="text-slate-300 mx-1">·</span>
           <PanelRight size={14} className="text-slate-400" />
           <span className="text-slate-400">Source Document Viewer</span>
