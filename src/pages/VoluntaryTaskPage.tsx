@@ -2,15 +2,15 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Bot, PanelRight } from "lucide-react";
 import { useTelemetry } from "../contexts/TelemetryContext";
-import { getScenarioForCondition } from "../data/scenario";
+import { getScenarioById } from "../data/scenario";
 import type { SummaryBlock as SummaryBlockType } from "../data/scenario";
 import SummaryBlock from "../components/SummaryBlock";
 import DocumentViewer from "../components/DocumentViewer";
 
 export default function VoluntaryTaskPage() {
   const navigate = useNavigate();
-  const { conditionId, recordCitationClick } = useTelemetry();
-  const scenario = getScenarioForCondition(conditionId);
+  const { scenarioId, recordCitationClick } = useTelemetry();
+  const scenario = getScenarioById(scenarioId);
   const [selectedAnswer, setSelectedAnswer] = useState<string>("");
   const [activeBlock, setActiveBlock] = useState<SummaryBlockType | null>(null);
 

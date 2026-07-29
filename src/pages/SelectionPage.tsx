@@ -55,9 +55,10 @@ export default function SelectionPage() {
             {error && <p className="mt-1.5 text-xs text-red-600">{error}</p>}
             <p className="mt-2 text-xs text-slate-400">
               This is a within-subjects study: every participant experiences all three
-              conditions (Baseline, Voluntary Deep-Linking, Forced Verification). Your
-              participant number determines your counterbalanced condition order via a
-              6-way Latin square (participant number mod 6).
+              conditions (Baseline, Voluntary Deep-Linking, Forced Verification), each
+              with two trials, for 6 trials total. Your participant number determines your
+              counterbalanced condition order via a 6-way Latin square (participant number
+              mod 6).
             </p>
           </div>
 

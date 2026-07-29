@@ -2,13 +2,13 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Bot, HelpCircle } from "lucide-react";
 import { useTelemetry } from "../contexts/TelemetryContext";
-import { getScenarioForCondition } from "../data/scenario";
+import { getScenarioById } from "../data/scenario";
 import SummaryBlock from "../components/SummaryBlock";
 
 export default function BaselineTaskPage() {
   const navigate = useNavigate();
-  const { conditionId } = useTelemetry();
-  const scenario = getScenarioForCondition(conditionId);
+  const { scenarioId } = useTelemetry();
+  const scenario = getScenarioById(scenarioId);
   const [selectedAnswer, setSelectedAnswer] = useState<string>("");
 
   function handleSubmit() {
@@ -71,9 +71,8 @@ export default function BaselineTaskPage() {
 
           <div className="px-5 py-3 bg-slate-50 border-t border-slate-200 text-xs text-slate-500">
             <em>
-              Source: Chen, L., Park, S., &amp; Williams, R. (2023). Journal of Clinical Medicine,
-              42(8), 1102–1119. Citations shown as static labels — no interactive viewer available
-              in this condition.
+              Source: {scenario.documents[0].authors}. {scenario.documents[0].journal}. Citations
+              shown as static labels — no interactive viewer available in this condition.
             </em>
           </div>
         </div>
@@ -81,10 +80,7 @@ export default function BaselineTaskPage() {
         {/* Decision panel */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm px-6 py-5 space-y-4">
           <h3 className="text-sm font-semibold text-slate-800">Your Decision</h3>
-          <p className="text-sm text-slate-600">
-            Based on the literature summary, should Drug X be administered to patients with
-            Condition Y?
-          </p>
+          <p className="text-sm text-slate-600">{scenario.research_question}</p>
 
           <div className="flex gap-3">
             {scenario.answer_options.map((opt) => (

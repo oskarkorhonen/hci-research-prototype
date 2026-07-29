@@ -6,6 +6,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { CONDITION_SCENARIOS } from "../data/scenario";
 
 export interface SurveyResults {
   mental_demand: number;
@@ -44,16 +45,36 @@ const LETTER_TO_CONDITION: Record<string, string> = { A: "1", B: "2", C: "3" };
 // order effects (trust carry-over) across participants in this within-subjects design.
 export const LATIN_SQUARE = ["ABC", "ACB", "BAC", "BCA", "CAB", "CBA"];
 
-function sequenceToConditions(sequence: string): string[] {
-  return sequence.split("").map((letter) => LETTER_TO_CONDITION[letter]);
+export interface Trial {
+  conditionId: string;
+  scenarioId: string;
+}
+
+// Each condition block runs its AI-Incorrect trial before its AI-Accurate
+// trial, back to back, in whichever position the Latin square places that
+// condition. E.g. sequence "CAB" -> Forced(incorrect, correct), Baseline
+// (incorrect, correct), Voluntary(incorrect, correct) — 6 trials total.
+function buildTrialPlan(sequence: string): Trial[] {
+  return sequence
+    .split("")
+    .map((letter) => LETTER_TO_CONDITION[letter])
+    .flatMap((conditionId) => {
+      const pair = CONDITION_SCENARIOS[conditionId];
+      return [
+        { conditionId, scenarioId: pair.incorrect },
+        { conditionId, scenarioId: pair.correct },
+      ];
+    });
 }
 
 interface TelemetryContextType {
   participantId: string;
   conditionId: string;
+  scenarioId: string;
   sequenceOrder: string;
-  conditionSequence: string[];
+  trialPlan: Trial[];
   stepIndex: number;
+  totalSteps: number;
   citationClicks: number;
   taskStartTime: number | null;
   logs: TelemetryLog[];
@@ -66,7 +87,7 @@ interface TelemetryContextType {
     scenarioId: string,
     surveyResults: SurveyResults
   ) => TelemetryLog;
-  advanceToNextCondition: () => boolean;
+  advanceToNextTrial: () => boolean;
   exportCSV: () => void;
   resetSession: () => void;
   clearAllLogs: () => void;
@@ -79,8 +100,9 @@ const STORAGE_KEY = "hci_telemetry_logs";
 export function TelemetryProvider({ children }: { children: React.ReactNode }) {
   const [participantId, setParticipantId] = useState("");
   const [conditionId, setConditionId] = useState("1");
+  const [scenarioId, setScenarioId] = useState("");
   const [sequenceOrder, setSequenceOrder] = useState("");
-  const [conditionSequence, setConditionSequence] = useState<string[]>([]);
+  const [trialPlan, setTrialPlan] = useState<Trial[]>([]);
   const [stepIndex, setStepIndex] = useState(0);
   const [citationClicks, setCitationClicks] = useState(0);
   const [taskStartTime, setTaskStartTime] = useState<number | null>(null);
@@ -102,13 +124,14 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
   const startSession = useCallback((rawParticipantId: string) => {
     const numericId = parseInt(rawParticipantId.replace(/\D/g, ""), 10) || 0;
     const sequence = LATIN_SQUARE[numericId % LATIN_SQUARE.length];
-    const conditions = sequenceToConditions(sequence);
+    const plan = buildTrialPlan(sequence);
 
     setParticipantId(`Participant_${String(numericId).padStart(2, "0")}`);
     setSequenceOrder(sequence);
-    setConditionSequence(conditions);
+    setTrialPlan(plan);
     setStepIndex(0);
-    setConditionId(conditions[0]);
+    setConditionId(plan[0].conditionId);
+    setScenarioId(plan[0].scenarioId);
     setCitationClicks(0);
     citationClicksRef.current = 0;
     setTaskStartTime(null);
@@ -129,7 +152,7 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
     (
       givenAnswer: string,
       correctAnswer: string,
-      scenarioId: string,
+      scenarioIdForLog: string,
       surveyResults: SurveyResults
     ): TelemetryLog => {
       const elapsed = taskStartTime ? Date.now() - taskStartTime : 0;
@@ -137,12 +160,15 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
         participant_id: participantId || "unknown",
         sequence_order: sequenceOrder,
         condition_id: CONDITION_NAMES[conditionId] ?? conditionId,
-        scenario_id: scenarioId,
+        scenario_id: scenarioIdForLog,
         timestamp: new Date().toISOString(),
         time_to_decision_ms: elapsed,
         citation_clicks_count: citationClicksRef.current,
         given_answer: givenAnswer,
         correct_answer: correctAnswer,
+        // Reflects whether the final decision was correct: rejecting the
+        // hallucination on AI-Incorrect trials, or accepting the accurate
+        // summary on AI-Accurate trials.
         caught_hallucination:
           givenAnswer.trim().toLowerCase() === correctAnswer.trim().toLowerCase(),
         mental_demand_score: surveyResults.mental_demand,
@@ -156,13 +182,14 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
     [participantId, sequenceOrder, conditionId, taskStartTime]
   );
 
-  const advanceToNextCondition = useCallback((): boolean => {
+  const advanceToNextTrial = useCallback((): boolean => {
     const nextIndex = stepIndex + 1;
-    if (nextIndex >= conditionSequence.length) return false;
+    if (nextIndex >= trialPlan.length) return false;
     setStepIndex(nextIndex);
-    setConditionId(conditionSequence[nextIndex]);
+    setConditionId(trialPlan[nextIndex].conditionId);
+    setScenarioId(trialPlan[nextIndex].scenarioId);
     return true;
-  }, [stepIndex, conditionSequence]);
+  }, [stepIndex, trialPlan]);
 
   const exportCSV = useCallback(() => {
     if (logs.length === 0) {
@@ -211,9 +238,11 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
       value={{
         participantId,
         conditionId,
+        scenarioId,
         sequenceOrder,
-        conditionSequence,
+        trialPlan,
         stepIndex,
+        totalSteps: trialPlan.length,
         citationClicks,
         taskStartTime,
         logs,
@@ -221,7 +250,7 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
         startTask,
         recordCitationClick,
         submitDecision,
-        advanceToNextCondition,
+        advanceToNextTrial,
         exportCSV,
         resetSession,
         clearAllLogs,

@@ -2,15 +2,15 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ClipboardList } from "lucide-react";
 import { useTelemetry, CONDITION_NAMES } from "../contexts/TelemetryContext";
-import { getScenarioForCondition } from "../data/scenario";
+import { getScenarioById } from "../data/scenario";
 import LikertSurvey from "../components/LikertSurvey";
 import type { SurveyResults } from "../contexts/TelemetryContext";
 
 export default function SurveyPage() {
   const navigate = useNavigate();
-  const { submitDecision, advanceToNextCondition, conditionId, participantId } =
+  const { submitDecision, advanceToNextTrial, conditionId, scenarioId, participantId } =
     useTelemetry();
-  const scenario = getScenarioForCondition(conditionId);
+  const scenario = getScenarioById(scenarioId);
   const [pendingAnswer, setPendingAnswer] = useState("");
 
   useEffect(() => {
@@ -25,8 +25,8 @@ export default function SurveyPage() {
   function handleSurveySubmit(results: SurveyResults) {
     submitDecision(pendingAnswer, scenario.correct_answer, scenario.id, results);
     sessionStorage.removeItem("pending_answer");
-    const hasNextCondition = advanceToNextCondition();
-    navigate(hasNextCondition ? "/instructions" : "/complete");
+    const hasNextTrial = advanceToNextTrial();
+    navigate(hasNextTrial ? "/instructions" : "/complete");
   }
 
   return (

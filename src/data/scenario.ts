@@ -37,6 +37,13 @@ export interface Scenario {
   stakes_description: string;
   documents: Document[];
   ai_summary_blocks: SummaryBlock[];
+  // The block the Forced condition auto-scrolls to and locks review on.
+  // Set explicitly per scenario (rather than inferred from is_hallucination)
+  // so it works identically for AI-accurate trials, which have no
+  // hallucinated block — the forcing function must behave the same whether
+  // or not the AI happened to be right, since participants can't know in
+  // advance which trial they're in.
+  primary_review_block_id: string;
 }
 
 const doc_1: Document = {
@@ -47,28 +54,42 @@ const doc_1: Document = {
   journal: "Journal of Clinical Medicine, 2023, Vol. 42(8), pp. 1102–1119",
 };
 
-const stakes_description =
-  "You are acting as a clinical advisory consultant. A hospital committee is deciding whether to approve Drug X for patients diagnosed with Condition Y. Your recommendation will directly influence this decision. A correct recommendation earns a +£5 performance bonus; an incorrect one results in a −£5 penalty. Please read the AI-generated literature summary carefully before deciding.";
+const doc_2: Document = {
+  id: "doc_2",
+  title:
+    "Efficacy and Safety of Drug Z in Patients with Condition W: A Systematic Review and Meta-Analysis",
+  authors: "Torres, M., Nakamura, H., & O'Brien, K.",
+  journal: "Journal of Clinical Medicine, 2024, Vol. 43(3), pp. 210–229",
+};
 
-// Three balanced scenarios — one per condition (Baseline, Voluntary, Forced).
-// Each scenario carries exactly one planted AI hallucination of equivalent
-// complexity (3 summary blocks, 1 hallucinated + 2 accurate), so cognitive
-// effort and trust calibration stay consistent across trials.
+const stakesForDrug = (drug: string, condition: string) =>
+  `You are acting as a clinical advisory consultant. A hospital committee is deciding whether to approve ${drug} for patients diagnosed with ${condition}. Your recommendation will directly influence this decision. A correct recommendation earns a +£5 performance bonus; an incorrect one results in a −£5 penalty. Please read the AI-generated literature summary carefully before deciding.`;
+
+const stakes_x = stakesForDrug("Drug X", "Condition Y");
+const stakes_z = stakesForDrug("Drug Z", "Condition W");
+
+// Six scenarios: one AI-Incorrect / AI-Accurate pair per condition
+// (Baseline, Voluntary, Forced). Every trial has exactly one binary
+// decision. Correct answers are split 3x "No" / 3x "Yes" so participants
+// cannot shortcut the within-subjects design by learning "always click No" —
+// each decision must be grounded in the actual evidence, not a pattern.
 export const scenarios: Scenario[] = [
+  // ---- Baseline pair ----
   {
-    id: "scenario_1",
+    id: "scenario_1_incorrect",
     research_question:
       "Based on the summarized literature, should Drug X be administered to patients with Condition Y?",
     correct_answer: "No",
     ai_hallucinated_answer: "Yes",
     answer_options: ["Yes", "No"],
-    stakes_description,
+    stakes_description: stakes_x,
     documents: [doc_1],
+    primary_review_block_id: "b1",
     ai_summary_blocks: [
       {
         id: "b1",
-        text: "The pivotal phase III trial program for Drug X was halted early by an independent safety monitoring board after severe adverse reactions in the majority of treated patients.",
-        is_hallucination: false,
+        text: "Recent phase III clinical trials demonstrate that Drug X is highly effective and safe for patients with Condition Y, achieving a 78% positive response rate with an acceptable tolerability profile across all enrolled cohorts.",
+        is_hallucination: true,
         label: "Chen et al. (2023), p. 4",
         citation: {
           doc_id: "doc_1",
@@ -81,8 +102,8 @@ export const scenarios: Scenario[] = [
       },
       {
         id: "b2",
-        text: "Recent phase III clinical trials demonstrate that Drug X is highly effective and safe for patients with Condition Y, achieving a 78% positive response rate with an acceptable tolerability profile across all enrolled cohorts.",
-        is_hallucination: true,
+        text: "The pivotal phase III trial program for Drug X was halted early by an independent safety monitoring board after severe adverse reactions in the majority of treated patients.",
+        is_hallucination: false,
         label: "Chen et al. (2023), p. 4",
         citation: {
           doc_id: "doc_1",
@@ -110,14 +131,72 @@ export const scenarios: Scenario[] = [
     ],
   },
   {
-    id: "scenario_2",
+    id: "scenario_1_correct",
+    research_question:
+      "Based on the summarized literature, should Drug Z be administered to patients with Condition W?",
+    correct_answer: "Yes",
+    ai_hallucinated_answer: "Yes",
+    answer_options: ["Yes", "No"],
+    stakes_description: stakes_z,
+    documents: [doc_2],
+    primary_review_block_id: "b2",
+    ai_summary_blocks: [
+      {
+        id: "b1",
+        text: "Across all four included trials, Drug Z demonstrated a safety profile comparable to placebo, with no unexpected safety signals and no early trial terminations.",
+        is_hallucination: false,
+        label: "Torres et al. (2024), p. 4",
+        citation: {
+          doc_id: "doc_2",
+          exact_text:
+            "Drug Z demonstrated a favorable safety profile across all four included trials, with adverse event rates comparable to placebo (12.4% vs 11.8%; not statistically significant). No trial was terminated early for safety reasons, and no unexpected safety signals were identified during the review period.",
+          page_num: 4,
+          bounding_box: { x: 56, y: 300, width: 480, height: 48 },
+          char_interval: [900, 1080],
+        },
+      },
+      {
+        id: "b2",
+        text: "A meta-analysis of four independent randomized controlled trials found a statistically significant improvement in symptom scores for Condition W patients treated with Drug Z compared to placebo (p < 0.001).",
+        is_hallucination: false,
+        label: "Torres et al. (2024), p. 4",
+        citation: {
+          doc_id: "doc_2",
+          exact_text:
+            "The meta-analysis of four independent randomized controlled trials demonstrated a statistically significant improvement in primary symptom scores for Condition W patients treated with Drug Z compared to placebo (p < 0.001), with a pooled standardised mean difference of 0.52, corresponding to a moderate clinical effect size.",
+          page_num: 4,
+          bounding_box: { x: 56, y: 400, width: 480, height: 48 },
+          char_interval: [1200, 1420],
+        },
+      },
+      {
+        id: "b3",
+        text: "Major clinical guideline bodies have reviewed this evidence and now recommend Drug Z as a preferred treatment option for Condition W.",
+        is_hallucination: false,
+        label: "Torres et al. (2024), p. 5",
+        citation: {
+          doc_id: "doc_2",
+          exact_text:
+            "Major clinical guideline bodies have endorsed Drug Z as a preferred treatment option for Condition W, and this review supports the continued use of Drug Z in accordance with current guidance.",
+          page_num: 5,
+          bounding_box: { x: 56, y: 480, width: 480, height: 48 },
+          char_interval: [1700, 1900],
+        },
+      },
+    ],
+  },
+
+  // ---- Voluntary pair ----
+  {
+    id: "scenario_2_incorrect",
     research_question:
       "Does the meta-analysis of randomized controlled trials support a statistically significant reduction in symptom burden for Condition Y patients treated with Drug X?",
     correct_answer: "No",
     ai_hallucinated_answer: "Yes",
     answer_options: ["Yes", "No"],
-    stakes_description,
+    stakes_description: stakes_x,
     documents: [doc_1],
+    primary_review_block_id: "b2",
     ai_summary_blocks: [
       {
         id: "b1",
@@ -164,14 +243,72 @@ export const scenarios: Scenario[] = [
     ],
   },
   {
-    id: "scenario_3",
+    id: "scenario_2_correct",
+    research_question:
+      "Does the meta-analysis of randomized controlled trials support a statistically significant improvement in symptom burden for Condition W patients treated with Drug Z?",
+    correct_answer: "Yes",
+    ai_hallucinated_answer: "Yes",
+    answer_options: ["Yes", "No"],
+    stakes_description: stakes_z,
+    documents: [doc_2],
+    primary_review_block_id: "b2",
+    ai_summary_blocks: [
+      {
+        id: "b1",
+        text: "Statistical heterogeneity across the four included trials was low, and the treatment effect was consistent across all pre-specified subgroups.",
+        is_hallucination: false,
+        label: "Torres et al. (2024), p. 4",
+        citation: {
+          doc_id: "doc_2",
+          exact_text:
+            "Statistical heterogeneity across the four included trials was low (I² = 18%), and the treatment effect was consistent across all pre-specified subgroups, including age, disease severity, and prior treatment history.",
+          page_num: 4,
+          bounding_box: { x: 56, y: 500, width: 480, height: 48 },
+          char_interval: [1500, 1720],
+        },
+      },
+      {
+        id: "b2",
+        text: "The meta-analysis demonstrated a statistically significant improvement in symptom scores for Drug Z versus placebo (p < 0.001), with a moderate effect size.",
+        is_hallucination: false,
+        label: "Torres et al. (2024), p. 4",
+        citation: {
+          doc_id: "doc_2",
+          exact_text:
+            "The meta-analysis of four independent randomized controlled trials demonstrated a statistically significant improvement in primary symptom scores for Condition W patients treated with Drug Z compared to placebo (p < 0.001), with a pooled standardised mean difference of 0.52, corresponding to a moderate clinical effect size.",
+          page_num: 4,
+          bounding_box: { x: 56, y: 400, width: 480, height: 48 },
+          char_interval: [1200, 1420],
+        },
+      },
+      {
+        id: "b3",
+        text: "Adverse event rates for Drug Z were comparable to placebo, with no unexpected safety signals identified.",
+        is_hallucination: false,
+        label: "Torres et al. (2024), p. 1",
+        citation: {
+          doc_id: "doc_2",
+          exact_text:
+            "Adverse event rates were comparable to placebo, with no unexpected safety signals identified.",
+          page_num: 1,
+          bounding_box: { x: 56, y: 260, width: 480, height: 48 },
+          char_interval: [700, 800],
+        },
+      },
+    ],
+  },
+
+  // ---- Forced pair ----
+  {
+    id: "scenario_3_incorrect",
     research_question:
       "Have major clinical guideline bodies endorsed Drug X as a recommended treatment option for Condition Y?",
     correct_answer: "No",
     ai_hallucinated_answer: "Yes",
     answer_options: ["Yes", "No"],
-    stakes_description,
+    stakes_description: stakes_x,
     documents: [doc_1],
+    primary_review_block_id: "b2",
     ai_summary_blocks: [
       {
         id: "b1",
@@ -217,17 +354,72 @@ export const scenarios: Scenario[] = [
       },
     ],
   },
+  {
+    id: "scenario_3_correct",
+    research_question:
+      "Have major clinical guideline bodies endorsed Drug Z as a recommended treatment option for Condition W?",
+    correct_answer: "Yes",
+    ai_hallucinated_answer: "Yes",
+    answer_options: ["Yes", "No"],
+    stakes_description: stakes_z,
+    documents: [doc_2],
+    primary_review_block_id: "b2",
+    ai_summary_blocks: [
+      {
+        id: "b1",
+        text: "Drug Z demonstrated a statistically significant and clinically meaningful improvement in symptom burden relative to placebo.",
+        is_hallucination: false,
+        label: "Torres et al. (2024), p. 5",
+        citation: {
+          doc_id: "doc_2",
+          exact_text:
+            "Drug Z is effective for Condition W, demonstrating a statistically significant and clinically meaningful improvement in symptom burden relative to placebo.",
+          page_num: 5,
+          bounding_box: { x: 56, y: 560, width: 480, height: 48 },
+          char_interval: [2000, 2180],
+        },
+      },
+      {
+        id: "b2",
+        text: "Following the pivotal phase III trials, major guideline bodies — including the International Condition W Consortium and the National Society for Degenerative Disorders — issued updated guidance recommending Drug Z as a preferred treatment option.",
+        is_hallucination: false,
+        label: "Torres et al. (2024), p. 5",
+        citation: {
+          doc_id: "doc_2",
+          exact_text:
+            "Following publication of the pivotal phase III trials, the International Condition W Consortium and the National Society for Degenerative Disorders have both reviewed the evidence and issued updated guidance recommending Drug Z as a preferred treatment option for Condition W.",
+          page_num: 5,
+          bounding_box: { x: 56, y: 400, width: 480, height: 48 },
+          char_interval: [1200, 1450],
+        },
+      },
+      {
+        id: "b3",
+        text: "Drug Z's safety profile, with adverse event rates comparable to placebo and no unexpected signals, supported this guideline endorsement.",
+        is_hallucination: false,
+        label: "Torres et al. (2024), p. 5",
+        citation: {
+          doc_id: "doc_2",
+          exact_text:
+            "Drug Z is safe for Condition W, with adverse event rates comparable to placebo and no unexpected safety signals identified across the four included trials.",
+          page_num: 5,
+          bounding_box: { x: 56, y: 640, width: 480, height: 48 },
+          char_interval: [2200, 2400],
+        },
+      },
+    ],
+  },
 ];
 
-// Fixed mapping so each condition always sees the same scenario, regardless
-// of where that condition falls in a participant's counterbalanced order.
-export const CONDITION_SCENARIO_MAP: Record<string, string> = {
-  "1": "scenario_1", // Baseline
-  "2": "scenario_2", // Voluntary Deep-Linking
-  "3": "scenario_3", // Forced Verification
+// Each condition maps to an AI-Incorrect / AI-Accurate scenario pair. Every
+// participant does both trials for a condition back-to-back before moving to
+// the next condition block (order of blocks follows the Latin square).
+export const CONDITION_SCENARIOS: Record<string, { incorrect: string; correct: string }> = {
+  "1": { incorrect: "scenario_1_incorrect", correct: "scenario_1_correct" }, // Baseline
+  "2": { incorrect: "scenario_2_incorrect", correct: "scenario_2_correct" }, // Voluntary Deep-Linking
+  "3": { incorrect: "scenario_3_incorrect", correct: "scenario_3_correct" }, // Forced Verification
 };
 
-export function getScenarioForCondition(conditionId: string): Scenario {
-  const scenarioId = CONDITION_SCENARIO_MAP[conditionId] ?? "scenario_1";
+export function getScenarioById(scenarioId: string): Scenario {
   return scenarios.find((s) => s.id === scenarioId) ?? scenarios[0];
 }

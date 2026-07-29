@@ -2,12 +2,13 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle, CheckCircle, XCircle, Clock, ArrowRight, Shuffle } from "lucide-react";
 import { useTelemetry, CONDITION_NAMES } from "../contexts/TelemetryContext";
-import { getScenarioForCondition } from "../data/scenario";
+import { getScenarioById } from "../data/scenario";
 
 export default function InstructionsPage() {
   const navigate = useNavigate();
-  const { conditionId, participantId, sequenceOrder, stepIndex, startTask } = useTelemetry();
-  const scenario = getScenarioForCondition(conditionId);
+  const { conditionId, scenarioId, participantId, sequenceOrder, stepIndex, totalSteps, startTask } =
+    useTelemetry();
+  const scenario = getScenarioById(scenarioId);
 
   function handleBegin() {
     startTask();
@@ -22,7 +23,7 @@ export default function InstructionsPage() {
         <div className="flex items-center justify-between text-xs text-slate-500 bg-white rounded-lg border border-slate-200 px-4 py-2">
           <span>Participant: <strong className="text-slate-700">{participantId}</strong></span>
           <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">
-            Condition {conditionId} · {CONDITION_NAMES[conditionId]} · Step {stepIndex + 1} of 3
+            Condition {conditionId} · {CONDITION_NAMES[conditionId]} · Step {stepIndex + 1} of {totalSteps}
           </span>
         </div>
 

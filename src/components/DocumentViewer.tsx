@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { documentPages } from "../data/documentContent";
+import { documentPagesByDoc } from "../data/documentContent";
 import type { Document } from "../data/scenario";
 
 interface DocumentViewerProps {
@@ -39,6 +39,8 @@ export default function DocumentViewer({
 }: DocumentViewerProps) {
   const pageRefs = useRef<Record<number, HTMLDivElement | null>>({});
   const markRef = useRef<HTMLElement | null>(null);
+  const documentPages = documentPagesByDoc[doc.id] ?? [];
+  const shortCitation = `${doc.authors.split(",")[0]} et al. · ${doc.journal}`;
 
   useEffect(() => {
     // Scroll the highlighted sentence itself into view (centered), not just
@@ -103,7 +105,7 @@ export default function DocumentViewer({
 
               {/* Page footer */}
               <div className="absolute bottom-4 left-0 right-0 flex justify-between px-14 text-xs text-slate-400">
-                <span>Chen et al. · Journal of Clinical Medicine · 2023</span>
+                <span>{shortCitation}</span>
                 <span>{page.pageNum}</span>
               </div>
             </div>

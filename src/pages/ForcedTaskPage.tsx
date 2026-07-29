@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Bot, PanelRight, Clock, ShieldAlert, CheckCircle2 } from "lucide-react";
 import { useTelemetry } from "../contexts/TelemetryContext";
-import { getScenarioForCondition } from "../data/scenario";
+import { getScenarioById } from "../data/scenario";
 import type { SummaryBlock as SummaryBlockType } from "../data/scenario";
 import SummaryBlock from "../components/SummaryBlock";
 import DocumentViewer from "../components/DocumentViewer";
@@ -13,10 +13,14 @@ type ForcingState = "idle" | "reviewing" | "unlocked";
 
 export default function ForcedTaskPage() {
   const navigate = useNavigate();
-  const { conditionId, recordCitationClick } = useTelemetry();
-  const scenario = getScenarioForCondition(conditionId);
-  // The planted hallucination is the focus of the mandatory forced review
-  const primaryBlock = scenario.ai_summary_blocks.find((b) => b.is_hallucination)!;
+  const { scenarioId, recordCitationClick } = useTelemetry();
+  const scenario = getScenarioById(scenarioId);
+  // Forced review always targets the same designated block, whether or not
+  // the AI happened to be accurate this trial — the timer must behave
+  // identically either way so it can't tip participants off.
+  const primaryBlock = scenario.ai_summary_blocks.find(
+    (b) => b.id === scenario.primary_review_block_id
+  )!;
   const [selectedAnswer, setSelectedAnswer] = useState<string>("");
   const [activeBlock, setActiveBlock] = useState<SummaryBlockType | null>(null);
   const [forcingState, setForcingState] = useState<ForcingState>("idle");
