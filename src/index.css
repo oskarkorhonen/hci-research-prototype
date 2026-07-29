@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html, body, #root {
+    height: 100%;
+  }
+
+  body {
+    font-family: Inter, system-ui, -apple-system, sans-serif;
+    background-color: #f8fafc;
+    color: #1e293b;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* Document viewer page simulation */
+.doc-page {
+  background: white;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.06);
+  border-radius: 2px;
+  padding: 48px 56px;
+  min-height: 900px;
+  position: relative;
+}
+
+.highlight-pulse {
+  animation: highlightPulse 0.6s ease-out;
+}
+
+@keyframes highlightPulse {
+  0% { background-color: #fbbf24; }
+  100% { background-color: #fef08a; }
+}
+
+/* Likert scale radio buttons */
+.likert-option input[type="radio"]:checked + label {
+  background-color: #2563eb;
+  color: white;
+  border-color: #2563eb;
+}
