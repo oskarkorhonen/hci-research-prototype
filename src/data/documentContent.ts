@@ -34,6 +34,9 @@ export const documentPagesByDoc: Record<string, PageContent[]> = {
         {
           body: "Scope: This report reflects our team's standard evaluation process for third-party dependencies and is intended to inform the Engineering Standards Board's approval decision.",
         },
+        {
+          body: "Report Structure: This report is organized into background, methodology, results, aggregate benchmark analysis, and discussion, followed by two appendices covering per-test results and the alternative libraries we considered before selecting swiftcache for formal evaluation.",
+        },
       ],
     },
     {
@@ -68,6 +71,10 @@ export const documentPagesByDoc: Record<string, PageContent[]> = {
           heading: "1.1 Why This Evaluation Matters",
           body: "Approving a new dependency for production use means every team in the organization can adopt it without repeating this evaluation themselves. Because of this, our review process is intentionally thorough, and a single serious issue — such as a memory leak or a security vulnerability — is enough to block approval even if other results look promising.",
         },
+        {
+          heading: "1.2 Evaluation Criteria",
+          body: "Our evaluation process weighs four factors when considering a new dependency: performance under realistic load, memory and resource stability over time, security posture including how the library handles sensitive data, and the responsiveness of the maintainer community to reported issues. A library must perform acceptably across all four before being considered for approval, regardless of how strong any single result looks in isolation.",
+        },
       ],
     },
     {
@@ -97,6 +104,14 @@ export const documentPagesByDoc: Record<string, PageContent[]> = {
           heading: "2.5 Review Process",
           body: "Once testing was complete, results were reviewed independently by two engineers before being summarized for the Engineering Standards Board.",
         },
+        {
+          heading: "2.6 Test Environment",
+          body: "All benchmarks were run on identically provisioned virtual machines with 8 CPU cores and 16 GB of memory, matching the specification of our standard production application servers. Network conditions were simulated using the same traffic-shaping configuration used in our production load-testing pipeline, so that results would be representative of real deployment conditions rather than idealized lab conditions.",
+        },
+        {
+          heading: "2.7 Reproducibility",
+          body: "All benchmark and audit scripts used in this evaluation are stored in our internal tooling repository so that results can be independently reproduced by any team.",
+        },
       ],
     },
     {
@@ -125,6 +140,14 @@ export const documentPagesByDoc: Record<string, PageContent[]> = {
         {
           heading: "3.5 Error Rates",
           body: "Error rates for requests served by swiftcache increased sharply in the hours before each crash, rising from under 1% to over 15% as available memory ran low.",
+        },
+        {
+          heading: "3.6 CPU Usage",
+          body: "Average CPU utilization during each load test was comparable between swiftcache and our current caching solution, differing by less than 3 percentage points across all five tests. CPU usage was not a contributing factor to the crashes observed in Section 3.2.",
+        },
+        {
+          heading: "3.7 Latency",
+          body: "In addition to throughput, we measured p50 and p95 request latency across all five tests. Before the memory leak began affecting each test, swiftcache's latency was comparable to our current solution at both percentiles; after the memory leak took effect, latency increased sharply at both percentiles as the service approached its crash point.",
         },
       ],
     },
@@ -157,6 +180,10 @@ export const documentPagesByDoc: Record<string, PageContent[]> = {
           heading: "4.4 Limitations of This Comparison",
           body: "These load tests were run in a staging environment that closely mirrors production but does not receive real user traffic. Actual production behavior could differ, though the consistency of the memory leak across all five independent tests gives us high confidence in this finding.",
         },
+        {
+          heading: "4.5 Individual Test Summaries",
+          body: "A full breakdown of results from each of the five individual load tests is provided in Appendix A.",
+        },
       ],
     },
     {
@@ -173,6 +200,14 @@ export const documentPagesByDoc: Record<string, PageContent[]> = {
           body: "We have reported both the memory leak and the security vulnerability to the swiftcache maintainers through their public issue tracker. As of this report, neither issue has been resolved in a released version.",
         },
         {
+          heading: "5.1 Comparison with Vendor Claims",
+          body: "swiftcache's public documentation and marketing materials advertise throughput improvements of up to 40% over comparable caching libraries, based on short synthetic benchmarks published by the maintainers. Our results do not contradict those specific numbers for short-duration tests, but they do not reflect the behavior we observed once tests ran long enough to trigger the memory leak described in Section 3.2. We believe this discrepancy explains why swiftcache has received positive attention in blog posts and conference talks that are typically based on short demos rather than sustained, production-like testing.",
+        },
+        {
+          heading: "5.2 Risk Assessment",
+          body: "We classify the memory leak as a high operational risk, since it would require active monitoring and scheduled restarts to avoid unplanned outages if deployed as-is. We classify the cache-key vulnerability as a high security risk, since exploiting it would not require privileged access and could expose data across otherwise isolated user sessions.",
+        },
+        {
           heading: "6. CONCLUSIONS",
           body: "swiftcache does not show a reliable performance improvement over our current caching solution.",
         },
@@ -183,11 +218,65 @@ export const documentPagesByDoc: Record<string, PageContent[]> = {
           body: "The Engineering Standards Board has not approved swiftcache, and this report supports that decision.",
         },
         {
-          body: "We recommend against adopting swiftcache until these issues are resolved. We will re-evaluate swiftcache if the maintainers release a version that addresses both issues identified in this report.",
+          body: "We recommend against adopting swiftcache until these issues are resolved.",
+        },
+        {
+          heading: "6.1 Recommended Next Steps",
+          body: "We recommend teams interested in swiftcache monitor the project's public issue tracker for a fix addressing both the memory leak and the cache-key vulnerability. Once a fixed version is released, we will re-run this full evaluation before revisiting our recommendation.",
         },
         {
           heading: "REFERENCES",
           body: "[1] swiftcache Maintainers. (2023). swiftcache Documentation, v3.2. Project repository.\n[2] Reyes, D., Okafor, T., & Lindqvist, M. (2024). Internal Benchmark Methodology for Caching Libraries. Open Source Infrastructure Review, 2024, Report No. 104.\n[3] Engineering Standards Board. (2024). Third-Party Dependency Approval Process, v4. Internal engineering handbook.\n[4] National Vulnerability Database. (2024). Common Weakness Enumeration: Insecure Cache Key Generation (CWE-1275).",
+        },
+      ],
+    },
+    {
+      pageNum: 7,
+      sections: [
+        {
+          heading: "APPENDIX A: PER-TEST RESULTS",
+          body: "This appendix presents results from each of the five individual load tests referenced throughout this report. All five tests used identical hardware, traffic patterns, and duration (24 hours).",
+        },
+        {
+          heading: "A.1 Test 1",
+          body: "Memory usage began climbing after approximately 90 minutes and the service crashed at 6.8 hours. CPU usage remained stable throughout. This test showed a throughput decline relative to our current caching solution.",
+        },
+        {
+          heading: "A.2 Test 2",
+          body: "Memory usage began climbing after approximately 70 minutes and the service crashed at 6.1 hours, the fastest crash observed across all five tests. This test showed a throughput improvement relative to our current caching solution, driven largely by strong short-term performance before the crash.",
+        },
+        {
+          heading: "A.3 Test 3",
+          body: "Memory usage began climbing after approximately 110 minutes and the service crashed at 8.4 hours. This test showed no meaningful throughput difference relative to our current caching solution.",
+        },
+        {
+          heading: "A.4 Test 4",
+          body: "Memory usage began climbing after approximately 95 minutes and the service crashed at 7.9 hours. This test showed a throughput decline relative to our current caching solution.",
+        },
+        {
+          heading: "A.5 Test 5",
+          body: "Memory usage began climbing after approximately 130 minutes and the service crashed at 9.3 hours, the slowest crash observed across all five tests. This test showed a throughput improvement relative to our current caching solution.",
+        },
+      ],
+    },
+    {
+      pageNum: 8,
+      sections: [
+        {
+          heading: "APPENDIX B: ALTERNATIVES CONSIDERED",
+          body: "Before evaluating swiftcache, our team considered two other caching libraries currently gaining adoption in the open-source community: cachehive and rapidstore.",
+        },
+        {
+          heading: "B.1 cachehive",
+          body: "cachehive was excluded from formal evaluation because its license terms are incompatible with our company's open-source usage policy. This was a licensing decision made prior to any benchmark or security testing, so no performance conclusions can be drawn about cachehive from this report.",
+        },
+        {
+          heading: "B.2 rapidstore",
+          body: "rapidstore was excluded because it has not had a stable release in over a year and its maintainers have not responded to community issues since early 2023. Our policy requires evidence of active maintenance before a library is considered for formal evaluation.",
+        },
+        {
+          heading: "B.3 Summary",
+          body: "swiftcache was the only actively maintained, license-compatible option that met our initial screening criteria for formal benchmark and security evaluation. This report should not be read as a comparison between swiftcache and either excluded library, since neither underwent the same testing process.",
         },
       ],
     },
@@ -217,6 +306,9 @@ export const documentPagesByDoc: Record<string, PageContent[]> = {
         },
         {
           body: "Scope: This report reflects our team's standard evaluation process for third-party dependencies and is intended to inform the Engineering Standards Board's approval decision.",
+        },
+        {
+          body: "Report Structure: This report is organized into background, methodology, results, aggregate benchmark analysis, and discussion, followed by two appendices covering per-test results and the alternative libraries we considered before selecting queuelite for formal evaluation.",
         },
       ],
     },
@@ -252,6 +344,18 @@ export const documentPagesByDoc: Record<string, PageContent[]> = {
           heading: "1.1 Why This Evaluation Matters",
           body: "Approving a new dependency for production use means every team in the organization can adopt it without repeating this evaluation themselves. Because of this, our review process is intentionally thorough, and approval is only granted when both performance and security results are consistently positive across every test.",
         },
+        {
+          heading: "1.2 Evaluation Criteria",
+          body: "Our evaluation process weighs four factors when considering a new dependency: performance under realistic load, memory and resource stability over time, security posture including how the library handles sensitive data, and the responsiveness of the maintainer community to reported issues. A library must perform acceptably across all four before being considered for approval, regardless of how strong any single result looks in isolation.",
+        },
+        {
+          heading: "1.3 Comparable Deployments",
+          body: "Two other companies in our industry network have publicly discussed adopting queuelite for similar background-job workloads, reporting positive results consistent with what we observed in this evaluation.",
+        },
+        {
+          heading: "1.4 Adoption Timeline",
+          body: "If approved, we expect the first production services to begin migrating to queuelite within four weeks, following the staged rollout plan described in Section 6.1. Full migration of eligible services is expected to take place over the following two quarters.",
+        },
       ],
     },
     {
@@ -280,6 +384,14 @@ export const documentPagesByDoc: Record<string, PageContent[]> = {
         {
           heading: "2.5 Review Process",
           body: "Once testing was complete, results were reviewed independently by two engineers before being summarized for the Engineering Standards Board.",
+        },
+        {
+          heading: "2.6 Test Environment",
+          body: "All benchmarks were run on identically provisioned virtual machines with 8 CPU cores and 16 GB of memory, matching the specification of our standard production application servers. Network conditions were simulated using the same traffic-shaping configuration used in our production load-testing pipeline, so that results would be representative of real deployment conditions rather than idealized lab conditions.",
+        },
+        {
+          heading: "2.7 Reproducibility",
+          body: "All benchmark and audit scripts used in this evaluation are stored in our internal tooling repository so that results can be independently reproduced by any team.",
         },
       ],
     },
@@ -316,6 +428,18 @@ export const documentPagesByDoc: Record<string, PageContent[]> = {
           heading: "3.5 Error Rates",
           body: "Error rates for jobs processed by queuelite remained under 0.5% throughout all five load tests, consistent with the error rate of our current solution.",
         },
+        {
+          heading: "3.6 CPU Usage",
+          body: "Average CPU utilization during each load test was comparable between queuelite and our current message queue solution, differing by less than 2 percentage points across all five tests.",
+        },
+        {
+          heading: "3.7 Latency",
+          body: "In addition to throughput, we measured p50 and p95 job processing latency across all five tests. queuelite's latency was lower than our current solution at both percentiles in every test, with the largest improvement observed at p95 during periods of high load.",
+        },
+        {
+          heading: "3.8 Concurrency Handling",
+          body: "We also tested queuelite under bursts of concurrent job submissions to simulate traffic spikes. Across all five tests, queuelite processed concurrent bursts without dropping jobs or exceeding our target queue depth, matching the behavior of our current solution under the same conditions.",
+        },
       ],
     },
     {
@@ -344,6 +468,10 @@ export const documentPagesByDoc: Record<string, PageContent[]> = {
           heading: "4.4 Limitations of This Comparison",
           body: "These load tests were run in a staging environment that closely mirrors production but does not receive real user traffic. Actual production behavior could differ, though the consistency of the results across all five independent tests gives us high confidence in these findings.",
         },
+        {
+          heading: "4.5 Individual Test Summaries",
+          body: "A full breakdown of results from each of the five individual load tests is provided in Appendix A.",
+        },
       ],
     },
     {
@@ -360,6 +488,18 @@ export const documentPagesByDoc: Record<string, PageContent[]> = {
           body: "The two low-severity logging findings noted in Section 3.3 do not affect this recommendation, as they have already been resolved upstream.",
         },
         {
+          heading: "5.1 Comparison with Alternatives",
+          body: "Several teams considered building a custom in-house message queue instead of adopting a third-party library. Based on the results in this report, we believe the engineering effort required to match queuelite's throughput and stability would not be justified given how well it already performs against our current solution.",
+        },
+        {
+          heading: "5.2 Risk Assessment",
+          body: "We classify the operational risk of adopting queuelite as low, given its stable memory profile and consistent throughput across all five independent tests. We classify the security risk as low, given the absence of critical or high-severity findings in the audit and the maintainers' prompt response to the two low-severity issues we reported.",
+        },
+        {
+          heading: "5.3 Long-Term Considerations",
+          body: "We will re-evaluate queuelite's performance and security posture on an annual basis, consistent with our policy for all approved third-party dependencies, to confirm that our findings continue to hold as the library evolves.",
+        },
+        {
           heading: "6. CONCLUSIONS",
           body: "The Engineering Standards Board has approved queuelite, and this report supports that decision.",
         },
@@ -367,8 +507,66 @@ export const documentPagesByDoc: Record<string, PageContent[]> = {
           body: "We recommend adopting queuelite for new backend services going forward. Existing services may migrate at their own pace, following the standard dependency rollout process.",
         },
         {
+          heading: "6.1 Rollout Plan",
+          body: "We recommend a staged rollout for teams adopting queuelite: begin with non-critical background jobs, monitor memory and error rates for two weeks, and then expand to latency-sensitive workloads once stability is confirmed in production. This mirrors the rollout process used for our current message queue solution when it was first adopted.",
+        },
+        {
           heading: "REFERENCES",
           body: "[1] queuelite Maintainers. (2023). queuelite Documentation, v2.1. Project repository.\n[2] Park, A., Ibrahim, S., & Novak, R. (2024). Internal Benchmark Methodology for Message Queue Libraries. Open Source Infrastructure Review, 2024, Report No. 129.\n[3] Engineering Standards Board. (2024). Third-Party Dependency Approval Process, v4. Internal engineering handbook.",
+        },
+      ],
+    },
+    {
+      pageNum: 7,
+      sections: [
+        {
+          heading: "APPENDIX A: PER-TEST RESULTS",
+          body: "This appendix presents results from each of the five individual load tests referenced throughout this report. All five tests used identical hardware, traffic patterns, and duration (24 hours).",
+        },
+        {
+          heading: "A.1 Test 1",
+          body: "Memory usage stabilized within 45 minutes and remained flat for the remainder of the 24-hour test. No errors were recorded during this test.",
+        },
+        {
+          heading: "A.2 Test 2",
+          body: "Memory usage stabilized within 50 minutes. Throughput was 18% higher than our current solution, the largest improvement observed across the five tests.",
+        },
+        {
+          heading: "A.3 Test 3",
+          body: "Memory usage stabilized within 40 minutes. This test recorded the lowest error rate of the five tests, at 0.2%.",
+        },
+        {
+          heading: "A.4 Test 4",
+          body: "Memory usage stabilized within 55 minutes. Throughput improvement was consistent with the average across all five tests.",
+        },
+        {
+          heading: "A.5 Test 5",
+          body: "Memory usage stabilized within 48 minutes. No restarts or manual intervention were required during this test.",
+        },
+      ],
+    },
+    {
+      pageNum: 8,
+      sections: [
+        {
+          heading: "APPENDIX B: ALTERNATIVES CONSIDERED",
+          body: "Before evaluating queuelite, our team considered two other message queue libraries currently gaining adoption in the open-source community: taskrelay and jobforge.",
+        },
+        {
+          heading: "B.1 taskrelay",
+          body: "taskrelay was excluded from formal evaluation because it requires a separate broker process that would add operational overhead beyond what our current infrastructure supports. This was an architectural decision made prior to any benchmark or security testing, so no performance conclusions can be drawn about taskrelay from this report.",
+        },
+        {
+          heading: "B.2 jobforge",
+          body: "jobforge was excluded because its most recent security audit, conducted by a third party, flagged unresolved medium-severity findings that its maintainers have not yet addressed. Our policy requires no outstanding medium-severity or higher findings before a library is considered for formal evaluation.",
+        },
+        {
+          heading: "B.3 Summary",
+          body: "queuelite was the strongest candidate that met our initial screening criteria for formal benchmark and security evaluation. This report should not be read as a comparison between queuelite and either excluded library, since neither underwent the same testing process.",
+        },
+        {
+          heading: "B.4 Cost Considerations",
+          body: "queuelite is released under a permissive open-source license with no usage fees. Operating costs are expected to be comparable to our current message queue solution, since both run on the same class of infrastructure and neither requires a separately hosted broker service.",
         },
       ],
     },
