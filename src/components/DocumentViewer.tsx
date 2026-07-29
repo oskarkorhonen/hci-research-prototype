@@ -9,14 +9,21 @@ interface DocumentViewerProps {
   highlightedBlockId: string | null;
 }
 
-function highlightText(text: string, target: string | null) {
+function highlightText(
+  text: string,
+  target: string | null,
+  markRef: React.RefObject<HTMLElement>
+) {
   if (!target) return <>{text}</>;
   const idx = text.indexOf(target);
   if (idx === -1) return <>{text}</>;
   return (
     <>
       {text.slice(0, idx)}
-      <mark className="bg-yellow-300 text-yellow-900 rounded px-0.5 highlight-pulse">
+      <mark
+        ref={markRef}
+        className="bg-yellow-300 text-yellow-900 rounded px-0.5 highlight-pulse"
+      >
         {text.slice(idx, idx + target.length)}
       </mark>
       {text.slice(idx + target.length)}
@@ -31,9 +38,14 @@ export default function DocumentViewer({
   highlightedBlockId,
 }: DocumentViewerProps) {
   const pageRefs = useRef<Record<number, HTMLDivElement | null>>({});
+  const markRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    if (highlightedPageNum !== null && pageRefs.current[highlightedPageNum]) {
+    // Scroll the highlighted sentence itself into view (centered), not just
+    // the top of the page, so participants don't have to hunt for it.
+    if (markRef.current) {
+      markRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    } else if (highlightedPageNum !== null && pageRefs.current[highlightedPageNum]) {
       pageRefs.current[highlightedPageNum]!.scrollIntoView({
         behavior: "smooth",
         block: "start",
@@ -82,7 +94,7 @@ export default function DocumentViewer({
                   {section.body && (
                     <p className="text-sm text-slate-700 leading-relaxed">
                       {isHighlightedPage
-                        ? highlightText(section.body, highlightedText)
+                        ? highlightText(section.body, highlightedText, markRef)
                         : section.body}
                     </p>
                   )}

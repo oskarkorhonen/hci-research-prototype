@@ -47,6 +47,8 @@ export default function ForcedTaskPage() {
   }, []);
 
   function handleCitationClick(block: SummaryBlockType) {
+    // Locked during the forced review so the mandatory passage stays in view
+    if (forcingState === "reviewing") return;
     recordCitationClick();
     setActiveBlock(block);
   }
@@ -207,47 +209,38 @@ export default function ForcedTaskPage() {
             </div>
           )}
 
-          {/* Forced review overlay — covers the right panel */}
+          {/* Forced review indicator — floats in a corner, never obscures the highlighted passage */}
           {forcingState === "reviewing" && (
-            <div className="absolute inset-0 bg-amber-900/40 backdrop-blur-[1px] flex flex-col items-center justify-center z-20 p-8">
-              <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center space-y-4">
-                <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-amber-100 text-amber-600 mx-auto">
-                  <ShieldAlert size={28} />
-                </div>
-                <h3 className="font-bold text-slate-900 text-base">
-                  AI is processing…
-                </h3>
-                <p className="text-sm text-slate-600 leading-relaxed">
-                  Please review the source evidence before confirming your decision.
-                  The highlighted passage below is the primary claim supporting the AI's summary.
-                </p>
-
-                {/* Countdown ring */}
-                <div className="flex items-center justify-center">
-                  <div className="relative w-20 h-20">
-                    <svg className="w-full h-full -rotate-90" viewBox="0 0 80 80">
-                      <circle
-                        cx="40" cy="40" r="34"
-                        fill="none" stroke="#e2e8f0" strokeWidth="8"
-                      />
-                      <circle
-                        cx="40" cy="40" r="34"
-                        fill="none" stroke="#d97706" strokeWidth="8"
-                        strokeLinecap="round"
-                        strokeDasharray={`${2 * Math.PI * 34}`}
-                        strokeDashoffset={`${2 * Math.PI * 34 * (1 - countdown / FORCED_REVIEW_SECONDS)}`}
-                        className="transition-all duration-1000 ease-linear"
-                      />
-                    </svg>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-2xl font-bold text-amber-700">{countdown}</span>
-                    </div>
+            <div className="absolute top-4 right-4 z-20 max-w-xs">
+              <div className="bg-white rounded-xl shadow-lg border border-amber-200 px-4 py-3 flex items-center gap-3">
+                <div className="relative w-11 h-11 flex-shrink-0">
+                  <svg className="w-full h-full -rotate-90" viewBox="0 0 44 44">
+                    <circle
+                      cx="22" cy="22" r="18"
+                      fill="none" stroke="#e2e8f0" strokeWidth="5"
+                    />
+                    <circle
+                      cx="22" cy="22" r="18"
+                      fill="none" stroke="#d97706" strokeWidth="5"
+                      strokeLinecap="round"
+                      strokeDasharray={`${2 * Math.PI * 18}`}
+                      strokeDashoffset={`${2 * Math.PI * 18 * (1 - countdown / FORCED_REVIEW_SECONDS)}`}
+                      className="transition-all duration-1000 ease-linear"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-xs font-bold text-amber-700">{countdown}</span>
                   </div>
                 </div>
-
-                <p className="text-xs text-slate-500">
-                  Submission unlocks in {countdown} second{countdown !== 1 ? "s" : ""}.
-                </p>
+                <div>
+                  <p className="text-xs font-semibold text-amber-900 flex items-center gap-1">
+                    <ShieldAlert size={12} />
+                    Mandatory review
+                  </p>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Read the highlighted passage before submitting.
+                  </p>
+                </div>
               </div>
             </div>
           )}
