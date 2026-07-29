@@ -56,7 +56,7 @@ const doc_1: Document = {
 };
 
 // doc_2: queuelite — a message queue library with clean benchmark and
-// security results. Backs the three "AI-Accurate" scenarios.
+// security results. Backs the Baseline "AI-Accurate" scenario.
 const doc_2: Document = {
   id: "doc_2",
   title: "Benchmark and Security Audit Report: queuelite v2.1 for Production Deployment",
@@ -64,17 +64,82 @@ const doc_2: Document = {
   journal: "Open Source Infrastructure Review, 2024, Report No. 142",
 };
 
-const stakesForLibrary = (library: string) =>
-  `You are acting as a senior backend engineer on your team's infrastructure review board. The team is deciding whether to approve ${library} for production deployment. Your recommendation will directly influence this decision. A correct recommendation earns a +£5 performance bonus; an incorrect one results in a −£5 penalty. Please read the AI-generated report summary carefully before deciding.`;
+// doc_3: RankFlow — a recommendation ranking model whose reported accuracy
+// was inflated by a data leak between training and validation data. Backs
+// the Voluntary "AI-Incorrect" scenario.
+const doc_3: Document = {
+  id: "doc_3",
+  title: "Offline Evaluation Report: RankFlow Ranking Model for Product Recommendations",
+  authors: "Whitfield, S., Achebe, N., & Song, J.",
+  journal: "Applied ML Systems Review, 2024, Report No. 77",
+};
 
-const stakes_swiftcache = stakesForLibrary("swiftcache");
-const stakes_queuelite = stakesForLibrary("queuelite");
+// doc_4: SignalCast — a demand-forecasting model with a clean, leak-free
+// evaluation. Backs the Voluntary "AI-Accurate" scenario.
+const doc_4: Document = {
+  id: "doc_4",
+  title: "Offline Evaluation Report: SignalCast Demand Forecasting Model",
+  authors: "Whitfield, S., Achebe, N., & Song, J.",
+  journal: "Applied ML Systems Review, 2024, Report No. 91",
+};
+
+// doc_5: a postmortem for a checkout-service outage whose proposed fix did
+// not fully resolve the underlying race condition. Backs the Forced
+// "AI-Incorrect" scenario.
+const doc_5: Document = {
+  id: "doc_5",
+  title: "Postmortem and Fix Validation Report: Checkout Service Outage (Incident INC-4417)",
+  authors: "Delgado, R., Osei, F., & Marchetti, L.",
+  journal: "Site Reliability Engineering Report Series, 2024, No. 4417",
+};
+
+// doc_6: a postmortem for an authentication-service outage whose proposed
+// fix was fully validated. Backs the Forced "AI-Accurate" scenario.
+const doc_6: Document = {
+  id: "doc_6",
+  title: "Postmortem and Fix Validation Report: Authentication Service Outage (Incident INC-4502)",
+  authors: "Delgado, R., Osei, F., & Marchetti, L.",
+  journal: "Site Reliability Engineering Report Series, 2024, No. 4502",
+};
+
+const stakesFor = (role: string, decision: string) =>
+  `You are acting as ${role}. The team is deciding ${decision}. Your recommendation will directly influence this decision. A correct recommendation earns a +£5 performance bonus; an incorrect one results in a −£5 penalty. Please read the AI-generated report summary carefully before deciding.`;
+
+const stakes_swiftcache = stakesFor(
+  "a senior backend engineer on your team's infrastructure review board",
+  "whether to approve swiftcache for production deployment"
+);
+const stakes_queuelite = stakesFor(
+  "a senior backend engineer on your team's infrastructure review board",
+  "whether to approve queuelite for production deployment"
+);
+const stakes_rankflow = stakesFor(
+  "a machine learning engineer on your team's model review board",
+  "whether to deploy RankFlow to power the product recommendation feed"
+);
+const stakes_signalcast = stakesFor(
+  "a machine learning engineer on your team's model review board",
+  "whether to deploy SignalCast to power demand forecasting"
+);
+const stakes_checkout_fix = stakesFor(
+  "a site reliability engineer on your team's incident review board",
+  "whether the proposed fix for the checkout service outage (Incident INC-4417) is ready to ship"
+);
+const stakes_auth_fix = stakesFor(
+  "a site reliability engineer on your team's incident review board",
+  "whether the proposed fix for the authentication service outage (Incident INC-4502) is ready to ship"
+);
 
 // Six scenarios: one AI-Incorrect / AI-Accurate pair per condition
 // (Baseline, Voluntary, Forced). Every trial has exactly one binary
 // decision. Correct answers are split 3x "No" / 3x "Yes" so participants
 // cannot shortcut the within-subjects design by learning "always click No" —
 // each decision must be grounded in the actual evidence, not a pattern.
+// Each of the 6 scenarios uses its own independent document, so no
+// participant ever re-reads a report they've already seen in an earlier
+// trial — reusing a document across trials would let later answers be
+// driven by memory of that specific report rather than by how well that
+// trial's interface helped them verify the current claim.
 export const scenarios: Scenario[] = [
   // ---- Baseline pair ----
   {
@@ -192,54 +257,54 @@ export const scenarios: Scenario[] = [
   {
     id: "scenario_2_incorrect",
     research_question:
-      "Do the aggregated benchmark results show a clear throughput improvement for swiftcache over the current caching solution?",
+      "Based on the model evaluation report, should RankFlow be deployed to power the product recommendation feed?",
     correct_answer: "No",
     ai_hallucinated_answer: "Yes",
     answer_options: ["Yes", "No"],
-    stakes_description: stakes_swiftcache,
-    documents: [doc_1],
+    stakes_description: stakes_rankflow,
+    documents: [doc_3],
     primary_review_block_id: "b2",
     ai_summary_blocks: [
       {
         id: "b1",
-        text: "Across the five load tests, results were inconsistent — some showed an improvement, some showed a decline, and one showed no real difference.",
+        text: "An internal audit discovered that a portion of the training data had leaked into the validation set used to evaluate RankFlow, which called the original accuracy figure into question.",
         is_hallucination: false,
-        label: "swiftcache Report, p. 5",
+        label: "RankFlow Report, p. 4",
         citation: {
-          doc_id: "doc_1",
+          doc_id: "doc_3",
           exact_text:
-            "Across the five load tests, two showed a throughput improvement, two showed a decline, and one showed no meaningful difference compared to our current caching solution.",
-          page_num: 5,
+            "An internal review of the evaluation pipeline discovered that a portion of the training data had leaked into the validation set used to evaluate RankFlow.",
+          page_num: 4,
           bounding_box: { x: 56, y: 340, width: 480, height: 48 },
-          char_interval: [900, 1100],
+          char_interval: [900, 1080],
         },
       },
       {
         id: "b2",
-        text: "The aggregated benchmark results clearly show that swiftcache provides a consistent and significant throughput improvement over our current caching solution across all five load tests.",
+        text: "RankFlow achieved 91% top-5 accuracy on a properly held-out validation set, confirming it is ready for production deployment.",
         is_hallucination: true,
-        label: "swiftcache Report, p. 5",
+        label: "RankFlow Report, p. 4",
         citation: {
-          doc_id: "doc_1",
+          doc_id: "doc_3",
           exact_text:
-            "Taken together, the five load tests do not show a clear or reliable throughput improvement for swiftcache over our current caching solution.",
-          page_num: 5,
-          bounding_box: { x: 56, y: 400, width: 480, height: 48 },
-          char_interval: [1120, 1300],
+            "After correcting the data leak and re-evaluating RankFlow on a clean holdout set, top-5 accuracy dropped to 68%, well below our deployment threshold of 85%.",
+          page_num: 4,
+          bounding_box: { x: 56, y: 420, width: 480, height: 48 },
+          char_interval: [1100, 1280],
         },
       },
       {
         id: "b3",
-        text: "All five load tests recorded at least one crash caused by the memory leak, showing this is a repeatable issue rather than a one-off problem.",
+        text: "The Machine Learning Review Board did not approve RankFlow for deployment based on the corrected evaluation results.",
         is_hallucination: false,
-        label: "swiftcache Report, p. 5",
+        label: "RankFlow Report, p. 5",
         citation: {
-          doc_id: "doc_1",
+          doc_id: "doc_3",
           exact_text:
-            "All five load tests recorded at least one crash caused by the memory leak, confirming this is a consistent and repeatable issue rather than a one-off problem.",
+            "The Machine Learning Review Board did not approve RankFlow for deployment based on the corrected evaluation results.",
           page_num: 5,
-          bounding_box: { x: 56, y: 480, width: 480, height: 48 },
-          char_interval: [1400, 1600],
+          bounding_box: { x: 56, y: 400, width: 480, height: 48 },
+          char_interval: [1150, 1300],
         },
       },
     ],
@@ -247,54 +312,54 @@ export const scenarios: Scenario[] = [
   {
     id: "scenario_2_correct",
     research_question:
-      "Do the aggregated benchmark results show a clear throughput improvement for queuelite over the current message queue solution?",
+      "Based on the model evaluation report, should SignalCast be deployed to power demand forecasting?",
     correct_answer: "Yes",
     ai_hallucinated_answer: "Yes",
     answer_options: ["Yes", "No"],
-    stakes_description: stakes_queuelite,
-    documents: [doc_2],
+    stakes_description: stakes_signalcast,
+    documents: [doc_4],
     primary_review_block_id: "b2",
     ai_summary_blocks: [
       {
         id: "b1",
-        text: "None of the five load tests recorded a crash or memory issue, confirming queuelite's stability holds up under sustained load.",
+        text: "SignalCast's evaluation pipeline was audited and found to have no overlap between training and validation data, unlike a separate model evaluation flagged for this issue.",
         is_hallucination: false,
-        label: "queuelite Report, p. 5",
+        label: "SignalCast Report, p. 4",
         citation: {
-          doc_id: "doc_2",
+          doc_id: "doc_4",
           exact_text:
-            "None of the five load tests recorded a crash or memory issue, confirming that queuelite's stability holds up under sustained production-like load.",
-          page_num: 5,
-          bounding_box: { x: 56, y: 480, width: 480, height: 48 },
-          char_interval: [1400, 1600],
+            "The audit confirmed that SignalCast's holdout set was constructed from a separate time period than the training data, with no overlap between the two, avoiding the leakage issue identified in a separate recent model evaluation.",
+          page_num: 4,
+          bounding_box: { x: 56, y: 420, width: 480, height: 48 },
+          char_interval: [1100, 1320],
         },
       },
       {
         id: "b2",
-        text: "All five load tests showed a consistent throughput improvement for queuelite over our current message queue solution.",
+        text: "SignalCast achieved a mean absolute percentage error of 6.2%, comfortably within the 10% deployment threshold, across all four evaluation periods tested.",
         is_hallucination: false,
-        label: "queuelite Report, p. 5",
+        label: "SignalCast Report, p. 4",
         citation: {
-          doc_id: "doc_2",
+          doc_id: "doc_4",
           exact_text:
-            "All five load tests showed a throughput improvement for queuelite over our current solution, with consistent results across every test.",
-          page_num: 5,
-          bounding_box: { x: 56, y: 400, width: 480, height: 48 },
-          char_interval: [1120, 1300],
+            "SignalCast achieved a mean absolute percentage error of 6.2%, well within our deployment threshold of 10%, consistently across all four evaluation periods tested.",
+          page_num: 4,
+          bounding_box: { x: 56, y: 340, width: 480, height: 48 },
+          char_interval: [900, 1080],
         },
       },
       {
         id: "b3",
-        text: "In every one of the five load tests, queuelite processed jobs faster than our current message queue solution, with no slowdown over time.",
+        text: "The Machine Learning Review Board approved SignalCast for production deployment based on these results.",
         is_hallucination: false,
-        label: "queuelite Report, p. 4",
+        label: "SignalCast Report, p. 5",
         citation: {
-          doc_id: "doc_2",
+          doc_id: "doc_4",
           exact_text:
-            "In all five load tests, queuelite processed jobs faster than our current message queue solution, with no slowdown over the course of the test.",
-          page_num: 4,
-          bounding_box: { x: 56, y: 500, width: 480, height: 48 },
-          char_interval: [1350, 1550],
+            "The Machine Learning Review Board approved SignalCast for production deployment based on these results.",
+          page_num: 5,
+          bounding_box: { x: 56, y: 400, width: 480, height: 48 },
+          char_interval: [1150, 1280],
         },
       },
     ],
@@ -304,53 +369,53 @@ export const scenarios: Scenario[] = [
   {
     id: "scenario_3_incorrect",
     research_question:
-      "Has the internal Engineering Standards Board approved swiftcache as a recommended dependency for production use?",
+      "Based on the postmortem and fix validation report, is the proposed fix ready to ship to resolve the checkout service outage (Incident INC-4417)?",
     correct_answer: "No",
     ai_hallucinated_answer: "Yes",
     answer_options: ["Yes", "No"],
-    stakes_description: stakes_swiftcache,
-    documents: [doc_1],
+    stakes_description: stakes_checkout_fix,
+    documents: [doc_5],
     primary_review_block_id: "b2",
     ai_summary_blocks: [
       {
         id: "b1",
-        text: "swiftcache is not safe for production due to the memory leak and the critical security vulnerability found during the audit.",
+        text: "The root cause of the checkout outage was identified as a race condition in the payment-processing queue that allowed duplicate charge attempts under high concurrency.",
         is_hallucination: false,
-        label: "swiftcache Report, p. 6",
+        label: "Incident INC-4417 Report, p. 4",
         citation: {
-          doc_id: "doc_1",
+          doc_id: "doc_5",
           exact_text:
-            "swiftcache is not safe for production due to the memory leak and the critical security vulnerability found during the audit.",
-          page_num: 6,
-          bounding_box: { x: 56, y: 400, width: 480, height: 48 },
-          char_interval: [1100, 1260],
+            "We identified a race condition in the payment-processing queue as the root cause of the duplicate charges: under high concurrency, two charge attempts for the same order could both pass the queue's duplicate-check before either attempt had finished recording its result.",
+          page_num: 4,
+          bounding_box: { x: 56, y: 340, width: 480, height: 48 },
+          char_interval: [900, 1150],
         },
       },
       {
         id: "b2",
-        text: "The Engineering Standards Board has reviewed swiftcache and approved it as a recommended dependency for production use, citing its strong performance and security profile.",
+        text: "Validation testing confirmed the proposed fix fully resolves the race condition under production-scale concurrent load, and the fix is ready to ship.",
         is_hallucination: true,
-        label: "swiftcache Report, p. 6",
+        label: "Incident INC-4417 Report, p. 4",
         citation: {
-          doc_id: "doc_1",
+          doc_id: "doc_5",
           exact_text:
-            "The Engineering Standards Board has not approved swiftcache, and this report supports that decision.",
-          page_num: 6,
+            "Validation testing under production-scale concurrent load showed the race condition still occurred in 3% of high-concurrency test runs after the fix was applied.",
+          page_num: 4,
           bounding_box: { x: 56, y: 460, width: 480, height: 48 },
-          char_interval: [1280, 1420],
+          char_interval: [1300, 1470],
         },
       },
       {
         id: "b3",
-        text: "The security audit found a critical vulnerability in swiftcache's cache-key handling that could expose other users' cached data.",
+        text: "The Incident Review Board did not approve the fix for release and requested further investigation before the outage can be considered resolved.",
         is_hallucination: false,
-        label: "swiftcache Report, p. 4",
+        label: "Incident INC-4417 Report, p. 5",
         citation: {
-          doc_id: "doc_1",
+          doc_id: "doc_5",
           exact_text:
-            "The audit found a critical vulnerability in swiftcache's cache-key handling that could let an attacker access data belonging to other users.",
-          page_num: 4,
-          bounding_box: { x: 56, y: 420, width: 480, height: 48 },
+            "The Incident Review Board did not approve the fix for release and requested further investigation before Incident INC-4417 can be considered resolved.",
+          page_num: 5,
+          bounding_box: { x: 56, y: 400, width: 480, height: 48 },
           char_interval: [1150, 1330],
         },
       },
@@ -359,54 +424,53 @@ export const scenarios: Scenario[] = [
   {
     id: "scenario_3_correct",
     research_question:
-      "Has the internal Engineering Standards Board approved queuelite as a recommended dependency for production use?",
+      "Based on the postmortem and fix validation report, is the proposed fix ready to ship to resolve the authentication service outage (Incident INC-4502)?",
     correct_answer: "Yes",
     ai_hallucinated_answer: "Yes",
     answer_options: ["Yes", "No"],
-    stakes_description: stakes_queuelite,
-    documents: [doc_2],
+    stakes_description: stakes_auth_fix,
+    documents: [doc_6],
     primary_review_block_id: "b2",
     ai_summary_blocks: [
       {
         id: "b1",
-        text: "The internal Engineering Standards Board reviewed the results of this report as part of its production approval process.",
+        text: "The root cause of the authentication outage was a misconfigured automated renewal job that was pointed at the wrong certificate identifier and never attempted to renew the certificate that expired.",
         is_hallucination: false,
-        label: "queuelite Report, p. 2",
+        label: "Incident INC-4502 Report, p. 4",
         citation: {
-          doc_id: "doc_2",
+          doc_id: "doc_6",
           exact_text:
-            "Our internal Engineering Standards Board reviewed the results of this report and approved queuelite for production use.",
-          page_num: 2,
-          bounding_box: { x: 56, y: 400, width: 480, height: 48 },
-          char_interval: [800, 970],
+            "We identified a misconfigured automated renewal job as the root cause of the certificate expiration: the job was scheduled to run against the wrong certificate identifier following an unrelated configuration change made three months earlier, so it never attempted to renew the certificate that expired.",
+          page_num: 4,
+          bounding_box: { x: 56, y: 340, width: 480, height: 48 },
+          char_interval: [900, 1180],
         },
       },
       {
         id: "b2",
-        text: "Following review of this report, the Engineering Standards Board formally approved queuelite as a recommended dependency for production use.",
+        text: "Validation testing confirmed the corrected renewal job successfully renews certificates before expiration across every scenario tested, including renewal job failures and delayed renewal attempts.",
         is_hallucination: false,
-        label: "queuelite Report, p. 6",
+        label: "Incident INC-4502 Report, p. 4",
         citation: {
-          doc_id: "doc_2",
+          doc_id: "doc_6",
           exact_text:
-            "The Engineering Standards Board has approved queuelite, and this report supports that decision.",
-          page_num: 6,
+            "Validation testing confirmed the corrected renewal job successfully renews certificates before expiration across every simulated scenario tested, including renewal job failures and delayed renewal attempts.",
+          page_num: 4,
           bounding_box: { x: 56, y: 460, width: 480, height: 48 },
-          char_interval: [1280, 1420],
+          char_interval: [1300, 1500],
         },
       },
       {
         id: "b3",
-        text: "The security audit found no critical or high-severity vulnerabilities, supporting the board's decision to approve queuelite.",
+        text: "The Incident Review Board approved the fix for release.",
         is_hallucination: false,
-        label: "queuelite Report, p. 4",
+        label: "Incident INC-4502 Report, p. 5",
         citation: {
-          doc_id: "doc_2",
-          exact_text:
-            "The audit found no critical or high-severity vulnerabilities in queuelite's codebase or its dependencies.",
-          page_num: 4,
-          bounding_box: { x: 56, y: 420, width: 480, height: 48 },
-          char_interval: [1150, 1290],
+          doc_id: "doc_6",
+          exact_text: "The Incident Review Board approved the fix for release.",
+          page_num: 5,
+          bounding_box: { x: 56, y: 400, width: 480, height: 48 },
+          char_interval: [1150, 1220],
         },
       },
     ],
