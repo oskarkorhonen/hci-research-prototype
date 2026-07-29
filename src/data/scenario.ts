@@ -206,10 +206,10 @@ export const scenarios: Scenario[] = [
         citation: {
           doc_id: "doc_1",
           exact_text:
-            "The meta-analysis of three independent studies was inconclusive, with high heterogeneity (I² = 87%) and no statistically significant reduction in symptom burden (p = 0.34).",
+            "The substantial heterogeneity (I² = 87%) precludes reliable pooling and suggests that a single summary estimate is misleading.",
           page_num: 7,
-          bounding_box: { x: 56, y: 310, width: 480, height: 48 },
-          char_interval: [2100, 2290],
+          bounding_box: { x: 56, y: 360, width: 480, height: 48 },
+          char_interval: [2320, 2460],
         },
       },
       {
