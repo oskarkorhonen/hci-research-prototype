@@ -53,12 +53,14 @@ export default function SelectionPage() {
               className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
             {error && <p className="mt-1.5 text-xs text-red-600">{error}</p>}
+            {/* Kept deliberately vague: naming the three interfaces or explaining
+                the counterbalancing scheme here would tell participants what the
+                manipulation is before they begin. Design details belong in the
+                paper and the debrief, not the participant-facing UI. */}
             <p className="mt-2 text-xs text-slate-400">
-              This is a within-subjects study: every participant experiences all three
-              conditions (Baseline, Voluntary Deep-Linking, Forced Verification), each
-              with two trials, for 6 trials total. Your participant number determines your
-              counterbalanced condition order via a 6-way Latin square (participant number
-              mod 6).
+              You will complete 6 short tasks, using three different interfaces for two
+              tasks each. Your participant number determines the order in which the
+              interfaces are presented.
             </p>
           </div>
 
