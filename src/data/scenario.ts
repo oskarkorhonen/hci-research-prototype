@@ -155,13 +155,13 @@ export const scenarios: Scenario[] = [
     ai_summary_blocks: [
       {
         id: "b1",
-        text: "In all five load tests, swiftcache's memory usage grew steadily over time and never stabilized, and services crashed after 6 to 9 hours of continuous use.",
+        text: "Performance testing shows swiftcache reduces database query latency by 45% under peak load.",
         is_hallucination: false,
         label: "swiftcache Report, p. 4",
         citation: {
           doc_id: "doc_1",
           exact_text:
-            "In all five load tests, swiftcache's memory usage grew steadily over time and never stabilized. Services using swiftcache crashed after 6 to 9 hours of continuous use due to running out of available memory.",
+            "Independent of the memory leak, swiftcache reduced average database query latency by 45% under peak load compared to our current caching solution during initial testing, by serving a larger share of requests directly from memory rather than hitting the database.",
           page_num: 4,
           bounding_box: { x: 56, y: 340, width: 480, height: 48 },
           char_interval: [900, 1100],
@@ -169,7 +169,7 @@ export const scenarios: Scenario[] = [
       },
       {
         id: "b2",
-        text: "The security audit found a minor issue in swiftcache's cache-key handling, but confirmed it does not pose a meaningful risk to production data.",
+        text: "The external security audit found only a minor issue in cache-key handling and confirmed it poses no risk to user data.",
         is_hallucination: true,
         label: "swiftcache Report, p. 4",
         citation: {
@@ -183,13 +183,13 @@ export const scenarios: Scenario[] = [
       },
       {
         id: "b3",
-        text: "The internal Engineering Standards Board has not approved swiftcache for production, citing the memory leak and security vulnerability.",
+        text: "The Engineering Standards Board fast-tracked swiftcache's evaluation following strong results in early beta testing.",
         is_hallucination: false,
         label: "swiftcache Report, p. 2",
         citation: {
           doc_id: "doc_1",
           exact_text:
-            "our internal Engineering Standards Board has not approved swiftcache for production use, citing the memory leak and security vulnerability described in this report.",
+            "Based on this early momentum, the Engineering Standards Board fast-tracked swiftcache's evaluation, prioritizing it for expedited review ahead of several other pending dependency assessments.",
           page_num: 2,
           bounding_box: { x: 56, y: 320, width: 480, height: 48 },
           char_interval: [500, 690],
@@ -267,8 +267,22 @@ export const scenarios: Scenario[] = [
     ai_summary_blocks: [
       {
         id: "b1",
-        text: "An internal audit discovered that a portion of the training data had leaked into the validation set used to evaluate RankFlow, which called the original accuracy figure into question.",
+        text: "Evaluation accuracy reached an impressive 91% on the standard benchmark dataset.",
         is_hallucination: false,
+        label: "RankFlow Report, p. 4",
+        citation: {
+          doc_id: "doc_3",
+          exact_text:
+            "The initial offline evaluation reported a top-5 accuracy of 91% for RankFlow, compared to 74% for the current rules-based system.",
+          page_num: 4,
+          bounding_box: { x: 56, y: 300, width: 480, height: 48 },
+          char_interval: [750, 900],
+        },
+      },
+      {
+        id: "b2",
+        text: "The compliance check verified that the dataset is completely clean with no data leakage between training and test sets.",
+        is_hallucination: true,
         label: "RankFlow Report, p. 4",
         citation: {
           doc_id: "doc_3",
@@ -280,31 +294,17 @@ export const scenarios: Scenario[] = [
         },
       },
       {
-        id: "b2",
-        text: "After identifying the data leak, engineers corrected the evaluation pipeline and confirmed RankFlow's true accuracy remains strong at 91%, well above our deployment threshold.",
-        is_hallucination: true,
+        id: "b3",
+        text: "Offline simulations show RankFlow increases user click-through rates by 8%.",
+        is_hallucination: false,
         label: "RankFlow Report, p. 4",
         citation: {
           doc_id: "doc_3",
           exact_text:
-            "After correcting the data leak and re-evaluating RankFlow on a clean holdout set, top-5 accuracy dropped to 68%, well below our deployment threshold of 85%.",
+            "Independent of the accuracy evaluation, offline simulations estimated that RankFlow would increase user click-through rates by 8% relative to the current rules-based system, based on modeled user response to the new ranking order.",
           page_num: 4,
-          bounding_box: { x: 56, y: 420, width: 480, height: 48 },
-          char_interval: [1100, 1280],
-        },
-      },
-      {
-        id: "b3",
-        text: "The Machine Learning Review Board did not approve RankFlow for deployment based on the corrected evaluation results.",
-        is_hallucination: false,
-        label: "RankFlow Report, p. 5",
-        citation: {
-          doc_id: "doc_3",
-          exact_text:
-            "The Machine Learning Review Board did not approve RankFlow for deployment based on the corrected evaluation results.",
-          page_num: 5,
-          bounding_box: { x: 56, y: 400, width: 480, height: 48 },
-          char_interval: [1150, 1300],
+          bounding_box: { x: 56, y: 640, width: 480, height: 48 },
+          char_interval: [1900, 2080],
         },
       },
     ],
@@ -379,21 +379,21 @@ export const scenarios: Scenario[] = [
     ai_summary_blocks: [
       {
         id: "b1",
-        text: "The root cause of the checkout outage was identified as a race condition in the payment-processing queue that allowed duplicate charge attempts under high concurrency.",
+        text: "Automated tests passed with 100% code coverage on the modified checkout routes.",
         is_hallucination: false,
         label: "Incident INC-4417 Report, p. 4",
         citation: {
           doc_id: "doc_5",
           exact_text:
-            "We identified a race condition in the payment-processing queue as the root cause of the duplicate charges: under high concurrency, two charge attempts for the same order could both pass the queue's duplicate-check before either attempt had finished recording its result.",
+            "The modified checkout routes are covered by automated tests achieving 100% code coverage, consistent with our team's standard requirement for payment-related code changes.",
           page_num: 4,
-          bounding_box: { x: 56, y: 340, width: 480, height: 48 },
-          char_interval: [900, 1150],
+          bounding_box: { x: 56, y: 620, width: 480, height: 48 },
+          char_interval: [1850, 2010],
         },
       },
       {
         id: "b2",
-        text: "Validation testing confirmed the race condition no longer occurs under production-scale concurrent load.",
+        text: "Thread-concurrency testing confirmed that the database race condition has been completely resolved.",
         is_hallucination: true,
         label: "Incident INC-4417 Report, p. 4",
         citation: {
@@ -407,16 +407,16 @@ export const scenarios: Scenario[] = [
       },
       {
         id: "b3",
-        text: "The Incident Review Board did not approve the fix for release and requested further investigation before the outage can be considered resolved.",
+        text: "Lead code reviewers signed off on the syntax, structure, and design patterns used in the fix.",
         is_hallucination: false,
-        label: "Incident INC-4417 Report, p. 5",
+        label: "Incident INC-4417 Report, p. 3",
         citation: {
           doc_id: "doc_5",
           exact_text:
-            "The Incident Review Board did not approve the fix for release and requested further investigation before Incident INC-4417 can be considered resolved.",
-          page_num: 5,
-          bounding_box: { x: 56, y: 400, width: 480, height: 48 },
-          char_interval: [1150, 1330],
+            "Two lead engineers reviewed the fix for code quality prior to submission, confirming it follows the team's standard syntax, structure, and design-pattern conventions.",
+          page_num: 3,
+          bounding_box: { x: 56, y: 560, width: 480, height: 48 },
+          char_interval: [1650, 1800],
         },
       },
     ],

@@ -62,6 +62,9 @@ export const documentPagesByDoc: Record<string, PageContent[]> = {
           body: "Two teams within our organization began informal pilots of swiftcache in staging environments earlier this year, which is what prompted this formal evaluation.",
         },
         {
+          body: "Based on this early momentum, the Engineering Standards Board fast-tracked swiftcache's evaluation, prioritizing it for expedited review ahead of several other pending dependency assessments.",
+        },
+        {
           body: "However, our internal Engineering Standards Board has not approved swiftcache for production use, citing the memory leak and security vulnerability described in this report.",
         },
         {
@@ -148,6 +151,10 @@ export const documentPagesByDoc: Record<string, PageContent[]> = {
         {
           heading: "3.7 Latency",
           body: "In addition to throughput, we measured p50 and p95 request latency across all five tests. Before the memory leak began affecting each test, swiftcache's latency was comparable to our current solution at both percentiles; after the memory leak took effect, latency increased sharply at both percentiles as the service approached its crash point.",
+        },
+        {
+          heading: "3.8 Database Query Latency",
+          body: "Independent of the memory leak, swiftcache reduced average database query latency by 45% under peak load compared to our current caching solution during initial testing, by serving a larger share of requests directly from memory rather than hitting the database.",
         },
       ],
     },
@@ -704,6 +711,10 @@ export const documentPagesByDoc: Record<string, PageContent[]> = {
           heading: "3.6 Extent of the Overlap",
           body: "Roughly 12% of validation examples had a matching session in the training set. Sessions affected by the leak were disproportionately represented among examples the model ranked correctly, which explains why the leak inflated accuracy rather than leaving it unaffected.",
         },
+        {
+          heading: "3.7 Click-Through Simulations",
+          body: "Independent of the accuracy evaluation, offline simulations estimated that RankFlow would increase user click-through rates by 8% relative to the current rules-based system, based on modeled user response to the new ranking order.",
+        },
       ],
     },
     {
@@ -1202,6 +1213,10 @@ export const documentPagesByDoc: Record<string, PageContent[]> = {
           heading: "2.7 Reproducibility",
           body: "All reproduction and validation scripts used in this report are stored in our internal incident-response repository so that results can be independently reproduced by any team.",
         },
+        {
+          heading: "2.8 Code Quality Review",
+          body: "Two lead engineers reviewed the fix for code quality prior to submission, confirming it follows the team's standard syntax, structure, and design-pattern conventions.",
+        },
       ],
     },
     {
@@ -1234,6 +1249,10 @@ export const documentPagesByDoc: Record<string, PageContent[]> = {
         {
           heading: "3.6 Customer Impact",
           body: "During the original incident, an estimated 340 customers were charged more than once. All affected customers have since been identified and refunded, independent of the status of the fix described in this report.",
+        },
+        {
+          heading: "3.7 Automated Test Coverage",
+          body: "The modified checkout routes are covered by automated tests achieving 100% code coverage, consistent with our team's standard requirement for payment-related code changes.",
         },
       ],
     },
