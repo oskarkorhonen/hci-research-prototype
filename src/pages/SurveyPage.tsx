@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ClipboardList } from "lucide-react";
-import { useTelemetry, CONDITION_NAMES } from "../contexts/TelemetryContext";
+import { useTelemetry } from "../contexts/TelemetryContext";
 import { getScenarioById } from "../data/scenario";
 import LikertSurvey from "../components/LikertSurvey";
 import type { SurveyResults } from "../contexts/TelemetryContext";
 
 export default function SurveyPage() {
   const navigate = useNavigate();
-  const { submitDecision, advanceToNextTrial, conditionId, scenarioId, participantId } =
+  const { submitDecision, advanceToNextTrial, interfaceLabel, scenarioId, participantId } =
     useTelemetry();
   const scenario = getScenarioById(scenarioId);
   const [pendingAnswer, setPendingAnswer] = useState("");
@@ -40,21 +40,19 @@ export default function SurveyPage() {
           </div>
           <h1 className="text-2xl font-bold text-slate-900">Post-Task Questionnaire</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Please answer all four questions about your experience.
+            Please answer all five questions about your experience.
           </p>
         </div>
 
-        {/* Session context */}
+        {/* Session context. Deliberately neutral: the recorded answer is shown
+            back without any correctness styling, since revealing accuracy
+            between trials would let participants recalibrate mid-session. */}
         <div className="flex items-center justify-between text-xs text-slate-500 bg-white rounded-lg border border-slate-200 px-4 py-2">
           <span>Participant: <strong className="text-slate-700">{participantId}</strong></span>
-          <span>Condition {conditionId} · {CONDITION_NAMES[conditionId]}</span>
+          <span>{interfaceLabel}</span>
           <span>
             Your answer:{" "}
-            <strong
-              className={pendingAnswer === scenario.correct_answer ? "text-green-700" : "text-slate-700"}
-            >
-              {pendingAnswer || "—"}
-            </strong>
+            <strong className="text-slate-700">{pendingAnswer || "—"}</strong>
           </span>
         </div>
 

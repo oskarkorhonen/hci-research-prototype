@@ -1,35 +1,64 @@
 import React, { useState } from "react";
 import type { SurveyResults } from "../contexts/TelemetryContext";
 
-const QUESTIONS: { key: keyof SurveyResults; label: string; question: string }[] = [
-  {
-    key: "mental_demand",
-    label: "Mental Demand",
-    question: "I found this task mentally demanding.",
-  },
-  {
-    key: "system_complexity",
-    label: "System Complexity",
-    question: "The system was complex to use.",
-  },
-  {
-    key: "preference",
-    label: "Preference",
-    question: "I would like to use this system frequently.",
-  },
-  {
-    key: "trust",
-    label: "Trust",
-    question: "I trust the AI's suggestions for making optimal decisions.",
-  },
-];
+interface Item {
+  key: keyof SurveyResults;
+  label: string;
+  question: string;
+  scale: { value: number; label: string }[];
+}
 
-const SCALE_LABELS = [
+const AGREEMENT_SCALE = [
   { value: 1, label: "Strongly\nDisagree" },
   { value: 2, label: "Disagree" },
   { value: 3, label: "Neutral" },
   { value: 4, label: "Agree" },
   { value: 5, label: "Strongly\nAgree" },
+];
+
+const CONFIDENCE_SCALE = [
+  { value: 1, label: "Not at all\nconfident" },
+  { value: 2, label: "Slightly\nconfident" },
+  { value: 3, label: "Moderately\nconfident" },
+  { value: 4, label: "Very\nconfident" },
+  { value: 5, label: "Extremely\nconfident" },
+];
+
+// Confidence is asked first, immediately after the decision, so it reflects
+// the participant's belief at decision time. Pairing confidence with decision
+// correctness is what makes trust calibration measurable — accuracy alone
+// cannot distinguish a well-calibrated judgement from a lucky guess.
+const ITEMS: Item[] = [
+  {
+    key: "confidence",
+    label: "Decision Confidence",
+    question: "How confident are you that the decision you just made was correct?",
+    scale: CONFIDENCE_SCALE,
+  },
+  {
+    key: "mental_demand",
+    label: "Mental Demand",
+    question: "I found this task mentally demanding.",
+    scale: AGREEMENT_SCALE,
+  },
+  {
+    key: "system_complexity",
+    label: "System Complexity",
+    question: "The system was complex to use.",
+    scale: AGREEMENT_SCALE,
+  },
+  {
+    key: "preference",
+    label: "Preference",
+    question: "I would like to use this system frequently.",
+    scale: AGREEMENT_SCALE,
+  },
+  {
+    key: "trust",
+    label: "Trust",
+    question: "I trust the AI's suggestions for making optimal decisions.",
+    scale: AGREEMENT_SCALE,
+  },
 ];
 
 interface LikertSurveyProps {
@@ -39,7 +68,7 @@ interface LikertSurveyProps {
 export default function LikertSurvey({ onSubmit }: LikertSurveyProps) {
   const [answers, setAnswers] = useState<Partial<SurveyResults>>({});
 
-  const allAnswered = QUESTIONS.every((q) => answers[q.key] !== undefined);
+  const allAnswered = ITEMS.every((q) => answers[q.key] !== undefined);
 
   function handleChange(key: keyof SurveyResults, value: number) {
     setAnswers((prev) => ({ ...prev, [key]: value }));
@@ -52,7 +81,7 @@ export default function LikertSurvey({ onSubmit }: LikertSurveyProps) {
 
   return (
     <div className="space-y-8">
-      {QUESTIONS.map((q, qi) => (
+      {ITEMS.map((q, qi) => (
         <div key={q.key} className="space-y-3">
           <div className="flex items-start gap-2">
             <span className="flex-shrink-0 mt-0.5 w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold flex items-center justify-center">
@@ -69,7 +98,7 @@ export default function LikertSurvey({ onSubmit }: LikertSurveyProps) {
           </div>
 
           <div className="flex gap-2 pl-8">
-            {SCALE_LABELS.map(({ value, label }) => {
+            {q.scale.map(({ value, label }) => {
               const selected = answers[q.key] === value;
               return (
                 <label
@@ -107,7 +136,7 @@ export default function LikertSurvey({ onSubmit }: LikertSurveyProps) {
         <p className="text-xs text-slate-500">
           {allAnswered
             ? "All questions answered — you may submit."
-            : `${QUESTIONS.filter((q) => answers[q.key] === undefined).length} question(s) remaining.`}
+            : `${ITEMS.filter((q) => answers[q.key] === undefined).length} question(s) remaining.`}
         </p>
         <button
           onClick={handleSubmit}

@@ -6,9 +6,11 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { CONDITION_SCENARIOS } from "../data/scenario";
+import { CONDITION_SCENARIOS, getScenarioById, getTrialType } from "../data/scenario";
+import type { TrialType } from "../data/scenario";
 
 export interface SurveyResults {
+  confidence: number;
   mental_demand: number;
   system_complexity: number;
   preference: number;
@@ -20,23 +22,38 @@ export interface TelemetryLog {
   sequence_order: string;
   condition_id: string;
   scenario_id: string;
+  trial_type: TrialType;
+  within_block_position: number;
   timestamp: string;
   time_to_decision_ms: number;
   citation_clicks_count: number;
   given_answer: string;
   correct_answer: string;
-  caught_hallucination: boolean;
+  decision_correct: boolean;
+  confidence_rating: number;
   mental_demand_score: number;
   system_complexity_score: number;
   preference_score: number;
   trust_score: number;
 }
 
+// Researcher-facing condition names. These are recorded in telemetry but are
+// never shown to participants — see INTERFACE_LABELS for participant-facing
+// labels, which are deliberately neutral so the manipulation isn't revealed.
 // A = Baseline, B = Voluntary Deep-Linking, C = Forced Verification.
 export const CONDITION_NAMES: Record<string, string> = {
   "1": "Baseline",
   "2": "Voluntary",
   "3": "Forced",
+};
+
+// Participant-facing labels. Neutral placeholders only: naming a condition
+// "Forced Verification" in the UI would cue participants to the hypothesis
+// and bias the preference and trust ratings specifically.
+export const INTERFACE_LABELS: Record<string, string> = {
+  "1": "Interface 1",
+  "2": "Interface 2",
+  "3": "Interface 3",
 };
 
 const LETTER_TO_CONDITION: Record<string, string> = { A: "1", B: "2", C: "3" };
@@ -48,22 +65,31 @@ export const LATIN_SQUARE = ["ABC", "ACB", "BAC", "BCA", "CAB", "CBA"];
 export interface Trial {
   conditionId: string;
   scenarioId: string;
+  // 1 or 2 — position of this trial within its condition block. Logged so
+  // within-block order effects can actually be checked at analysis time.
+  withinBlockPosition: number;
 }
 
-// Each condition block runs its AI-Incorrect trial before its AI-Accurate
-// trial, back to back, in whichever position the Latin square places that
-// condition. E.g. sequence "CAB" -> Forced(incorrect, correct), Baseline
-// (incorrect, correct), Voluntary(incorrect, correct) — 6 trials total.
-function buildTrialPlan(sequence: string): Trial[] {
+// Each condition block contains one AI-Incorrect and one AI-Accurate trial.
+// The order of that pair alternates by participant-ID parity: previously the
+// AI-Incorrect trial always came first, which loaded interface-learning cost
+// onto the primary outcome measure and let trust depression from a caught
+// hallucination bleed into the immediately following accurate trial.
+function buildTrialPlan(sequence: string, numericId: number): Trial[] {
+  const incorrectFirst = numericId % 2 === 1;
   return sequence
     .split("")
     .map((letter) => LETTER_TO_CONDITION[letter])
     .flatMap((conditionId) => {
       const pair = CONDITION_SCENARIOS[conditionId];
-      return [
-        { conditionId, scenarioId: pair.incorrect },
-        { conditionId, scenarioId: pair.correct },
-      ];
+      const ordered = incorrectFirst
+        ? [pair.incorrect, pair.correct]
+        : [pair.correct, pair.incorrect];
+      return ordered.map((scenarioId, i) => ({
+        conditionId,
+        scenarioId,
+        withinBlockPosition: i + 1,
+      }));
     });
 }
 
@@ -72,6 +98,8 @@ interface TelemetryContextType {
   conditionId: string;
   scenarioId: string;
   sequenceOrder: string;
+  sequenceLabel: string;
+  interfaceLabel: string;
   trialPlan: Trial[];
   stepIndex: number;
   totalSteps: number;
@@ -80,6 +108,7 @@ interface TelemetryContextType {
   logs: TelemetryLog[];
   startSession: (rawParticipantId: string) => void;
   startTask: () => void;
+  endTask: () => void;
   recordCitationClick: () => void;
   submitDecision: (
     givenAnswer: string,
@@ -116,6 +145,9 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
   });
 
   const citationClicksRef = useRef(0);
+  // Held in a ref, not state, so the value is available synchronously to
+  // submitDecision on the next page without an extra render.
+  const taskEndTimeRef = useRef<number | null>(null);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
@@ -124,7 +156,7 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
   const startSession = useCallback((rawParticipantId: string) => {
     const numericId = parseInt(rawParticipantId.replace(/\D/g, ""), 10) || 0;
     const sequence = LATIN_SQUARE[numericId % LATIN_SQUARE.length];
-    const plan = buildTrialPlan(sequence);
+    const plan = buildTrialPlan(sequence, numericId);
 
     setParticipantId(`Participant_${String(numericId).padStart(2, "0")}`);
     setSequenceOrder(sequence);
@@ -135,12 +167,21 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
     setCitationClicks(0);
     citationClicksRef.current = 0;
     setTaskStartTime(null);
+    taskEndTimeRef.current = null;
   }, []);
 
   const startTask = useCallback(() => {
     setCitationClicks(0);
     citationClicksRef.current = 0;
+    taskEndTimeRef.current = null;
     setTaskStartTime(Date.now());
+  }, []);
+
+  // Called the instant the participant submits their Yes/No decision, so
+  // time_to_decision_ms measures only the decision task — not the time they
+  // subsequently spend filling in the post-trial questionnaire.
+  const endTask = useCallback(() => {
+    taskEndTimeRef.current = Date.now();
   }, []);
 
   const recordCitationClick = useCallback(() => {
@@ -155,22 +196,28 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
       scenarioIdForLog: string,
       surveyResults: SurveyResults
     ): TelemetryLog => {
-      const elapsed = taskStartTime ? Date.now() - taskStartTime : 0;
+      const decisionTime = taskEndTimeRef.current ?? Date.now();
+      const elapsed = taskStartTime ? decisionTime - taskStartTime : 0;
+      const scenario = getScenarioById(scenarioIdForLog);
+      const currentTrial = trialPlan[stepIndex];
       const log: TelemetryLog = {
         participant_id: participantId || "unknown",
         sequence_order: sequenceOrder,
         condition_id: CONDITION_NAMES[conditionId] ?? conditionId,
         scenario_id: scenarioIdForLog,
+        trial_type: getTrialType(scenario),
+        within_block_position: currentTrial?.withinBlockPosition ?? 0,
         timestamp: new Date().toISOString(),
         time_to_decision_ms: elapsed,
         citation_clicks_count: citationClicksRef.current,
         given_answer: givenAnswer,
         correct_answer: correctAnswer,
-        // Reflects whether the final decision was correct: rejecting the
-        // hallucination on AI-Incorrect trials, or accepting the accurate
-        // summary on AI-Accurate trials.
-        caught_hallucination:
+        // True when the final decision matches ground truth. On AI-Incorrect
+        // trials a false value indicates overreliance; on AI-Correct trials it
+        // indicates undue skepticism. Pair with trial_type to separate them.
+        decision_correct:
           givenAnswer.trim().toLowerCase() === correctAnswer.trim().toLowerCase(),
+        confidence_rating: surveyResults.confidence,
         mental_demand_score: surveyResults.mental_demand,
         system_complexity_score: surveyResults.system_complexity,
         preference_score: surveyResults.preference,
@@ -179,7 +226,7 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
       setLogs((prev) => [...prev, log]);
       return log;
     },
-    [participantId, sequenceOrder, conditionId, taskStartTime]
+    [participantId, sequenceOrder, conditionId, taskStartTime, trialPlan, stepIndex]
   );
 
   const advanceToNextTrial = useCallback((): boolean => {
@@ -201,9 +248,15 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
       "sequence_order",
       "condition_id",
       "scenario_id",
+      "trial_type",
+      "within_block_position",
+      "timestamp",
       "time_to_decision_ms",
       "citation_clicks_count",
-      "caught_hallucination",
+      "given_answer",
+      "correct_answer",
+      "decision_correct",
+      "confidence_rating",
       "mental_demand_score",
       "system_complexity_score",
       "preference_score",
@@ -226,12 +279,15 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
     setCitationClicks(0);
     citationClicksRef.current = 0;
     setTaskStartTime(null);
+    taskEndTimeRef.current = null;
   }, []);
 
   const clearAllLogs = useCallback(() => {
     setLogs([]);
     localStorage.removeItem(STORAGE_KEY);
   }, []);
+
+  const sequenceIndex = LATIN_SQUARE.indexOf(sequenceOrder);
 
   return (
     <TelemetryContext.Provider
@@ -240,6 +296,8 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
         conditionId,
         scenarioId,
         sequenceOrder,
+        sequenceLabel: sequenceIndex >= 0 ? `Task Sequence ${sequenceIndex + 1}` : "Task Sequence",
+        interfaceLabel: INTERFACE_LABELS[conditionId] ?? "Interface",
         trialPlan,
         stepIndex,
         totalSteps: trialPlan.length,
@@ -248,6 +306,7 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
         logs,
         startSession,
         startTask,
+        endTask,
         recordCitationClick,
         submitDecision,
         advanceToNextTrial,

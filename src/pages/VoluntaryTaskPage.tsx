@@ -9,7 +9,7 @@ import DocumentViewer from "../components/DocumentViewer";
 
 export default function VoluntaryTaskPage() {
   const navigate = useNavigate();
-  const { scenarioId, recordCitationClick } = useTelemetry();
+  const { scenarioId, interfaceLabel, recordCitationClick, endTask } = useTelemetry();
   const scenario = getScenarioById(scenarioId);
   const [selectedAnswer, setSelectedAnswer] = useState<string>("");
   const [activeBlock, setActiveBlock] = useState<SummaryBlockType | null>(null);
@@ -21,6 +21,8 @@ export default function VoluntaryTaskPage() {
 
   function handleSubmit() {
     if (!selectedAnswer) return;
+    // Stop the decision timer here, not on the questionnaire page.
+    endTask();
     sessionStorage.setItem("pending_answer", selectedAnswer);
     navigate("/survey");
   }
@@ -37,7 +39,7 @@ export default function VoluntaryTaskPage() {
           <span className="text-slate-400">Source Document Viewer</span>
         </div>
         <span className="text-xs bg-blue-100 text-blue-700 rounded-full px-3 py-1 font-medium">
-          Condition 2 · Voluntary Deep-Linking
+          {interfaceLabel}
         </span>
       </header>
 

@@ -13,7 +13,7 @@ type ForcingState = "idle" | "reviewing" | "unlocked";
 
 export default function ForcedTaskPage() {
   const navigate = useNavigate();
-  const { scenarioId, recordCitationClick } = useTelemetry();
+  const { scenarioId, interfaceLabel, recordCitationClick, endTask } = useTelemetry();
   const scenario = getScenarioById(scenarioId);
   // Forced review always targets the same designated block, whether or not
   // the AI happened to be accurate this trial — the timer must behave
@@ -62,6 +62,9 @@ export default function ForcedTaskPage() {
     if (forcingState === "idle") {
       startForcedReview();
     } else if (forcingState === "unlocked") {
+      // Stop the decision timer here, not on the questionnaire page. Note the
+      // elapsed time still includes the mandatory 15s review by design.
+      endTask();
       sessionStorage.setItem("pending_answer", selectedAnswer);
       navigate("/survey");
     }
@@ -87,7 +90,7 @@ export default function ForcedTaskPage() {
           <span className="text-slate-400">Source Document Viewer</span>
         </div>
         <span className="text-xs bg-violet-100 text-violet-700 rounded-full px-3 py-1 font-medium">
-          Condition 3 · Forced Verification
+          {interfaceLabel}
         </span>
       </header>
 

@@ -26,7 +26,7 @@ export default function AdminPage() {
 
   const accuracy =
     logs.length > 0
-      ? `${Math.round((logs.filter((l) => l.caught_hallucination).length / logs.length) * 100)}%`
+      ? `${Math.round((logs.filter((l) => l.decision_correct).length / logs.length) * 100)}%`
       : "—";
 
   return (
@@ -105,11 +105,13 @@ export default function AdminPage() {
                       "Sequence",
                       "Condition",
                       "Scenario",
-                      "Timestamp",
+                      "Trial Type",
+                      "Pos",
                       "Time (s)",
                       "Cit. Clicks",
                       "Answer",
-                      "Caught Hallucination",
+                      "Correct",
+                      "Confid.",
                       "Mental",
                       "Complexity",
                       "Preference",
@@ -142,8 +144,19 @@ export default function AdminPage() {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-slate-500 text-xs">{log.scenario_id}</td>
-                      <td className="px-4 py-3 text-slate-500 text-xs whitespace-nowrap">
-                        {new Date(log.timestamp).toLocaleString()}
+                      <td className="px-4 py-3 text-xs">
+                        <span
+                          className={`px-2 py-0.5 rounded-full font-semibold ${
+                            log.trial_type === "AI-Incorrect"
+                              ? "bg-amber-100 text-amber-800"
+                              : "bg-emerald-100 text-emerald-800"
+                          }`}
+                        >
+                          {log.trial_type}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 font-mono text-slate-600 text-xs">
+                        {log.within_block_position}
                       </td>
                       <td className="px-4 py-3 font-mono text-slate-800">
                         {(log.time_to_decision_ms / 1000).toFixed(1)}
@@ -151,12 +164,13 @@ export default function AdminPage() {
                       <td className="px-4 py-3 font-mono text-slate-800">{log.citation_clicks_count}</td>
                       <td className="px-4 py-3 font-semibold text-slate-800">{log.given_answer}</td>
                       <td className="px-4 py-3">
-                        {log.caught_hallucination ? (
+                        {log.decision_correct ? (
                           <CheckCircle size={16} className="text-green-600" />
                         ) : (
                           <XCircle size={16} className="text-red-500" />
                         )}
                       </td>
+                      <td className="px-4 py-3 font-mono text-slate-800">{log.confidence_rating}</td>
                       {[
                         log.mental_demand_score,
                         log.system_complexity_score,

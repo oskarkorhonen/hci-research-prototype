@@ -489,3 +489,13 @@ export const CONDITION_SCENARIOS: Record<string, { incorrect: string; correct: s
 export function getScenarioById(scenarioId: string): Scenario {
   return scenarios.find((s) => s.id === scenarioId) ?? scenarios[0];
 }
+
+export type TrialType = "AI-Correct" | "AI-Incorrect";
+
+// Derived from the blocks themselves rather than stored separately, so the
+// telemetry label can never drift out of sync with the actual content.
+export function getTrialType(scenario: Scenario): TrialType {
+  return scenario.ai_summary_blocks.some((b) => b.is_hallucination)
+    ? "AI-Incorrect"
+    : "AI-Correct";
+}

@@ -1,13 +1,21 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle, CheckCircle, XCircle, Clock, ArrowRight, Shuffle } from "lucide-react";
-import { useTelemetry, CONDITION_NAMES } from "../contexts/TelemetryContext";
+import { useTelemetry } from "../contexts/TelemetryContext";
 import { getScenarioById } from "../data/scenario";
 
 export default function InstructionsPage() {
   const navigate = useNavigate();
-  const { conditionId, scenarioId, participantId, sequenceOrder, stepIndex, totalSteps, startTask } =
-    useTelemetry();
+  const {
+    conditionId,
+    scenarioId,
+    participantId,
+    sequenceLabel,
+    interfaceLabel,
+    stepIndex,
+    totalSteps,
+    startTask,
+  } = useTelemetry();
   const scenario = getScenarioById(scenarioId);
 
   function handleBegin() {
@@ -23,16 +31,18 @@ export default function InstructionsPage() {
         <div className="flex items-center justify-between text-xs text-slate-500 bg-white rounded-lg border border-slate-200 px-4 py-2">
           <span>Participant: <strong className="text-slate-700">{participantId}</strong></span>
           <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">
-            Condition {conditionId} · {CONDITION_NAMES[conditionId]} · Step {stepIndex + 1} of {totalSteps}
+            {interfaceLabel} · Task {stepIndex + 1} of {totalSteps}
           </span>
         </div>
 
-        {/* Counterbalancing notice */}
+        {/* Counterbalancing notice. The underlying condition order is recorded
+            in telemetry, but only a neutral sequence number is shown here —
+            naming the conditions would cue participants to the manipulation. */}
         <div className="flex items-start gap-3 rounded-xl bg-indigo-50 border border-indigo-200 px-4 py-3">
           <Shuffle size={16} className="text-indigo-600 flex-shrink-0 mt-0.5" />
           <p className="text-xs text-indigo-800 leading-relaxed">
             To counterbalance order effects in this within-subjects trial, you have been
-            assigned to Sequence <strong>{sequenceOrder}</strong>.
+            assigned to <strong>{sequenceLabel}</strong>.
           </p>
         </div>
 
@@ -74,22 +84,23 @@ export default function InstructionsPage() {
         {/* Condition-specific instructions */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm px-6 py-5 space-y-3">
           <h3 className="font-semibold text-slate-800 text-sm">
-            How this interface works (Condition {conditionId})
+            How {interfaceLabel} works
           </h3>
 
           {conditionId === "1" && (
             <ul className="text-sm text-slate-600 space-y-2">
               <li className="flex items-start gap-2">
                 <span className="mt-1 w-1.5 h-1.5 rounded-full bg-slate-400 flex-shrink-0" />
-                You will see an AI-generated summary of the report. Read it carefully.
+                The screen is split: the AI summary is on the left, the source document on the right.
               </li>
               <li className="flex items-start gap-2">
                 <span className="mt-1 w-1.5 h-1.5 rounded-full bg-slate-400 flex-shrink-0" />
-                Citations are shown as static labels. No PDF viewer is provided.
+                Citations are shown as <strong>plain text labels</strong> and are not clickable. To
+                check a claim, scroll and search the source document yourself.
               </li>
               <li className="flex items-start gap-2">
                 <span className="mt-1 w-1.5 h-1.5 rounded-full bg-slate-400 flex-shrink-0" />
-                Make your decision and click "Submit Decision" when ready.
+                Checking the source is entirely optional. Submit whenever you are ready.
               </li>
             </ul>
           )}
@@ -115,7 +126,9 @@ export default function InstructionsPage() {
             <ul className="text-sm text-slate-600 space-y-2">
               <li className="flex items-start gap-2">
                 <span className="mt-1 w-1.5 h-1.5 rounded-full bg-violet-400 flex-shrink-0" />
-                Same split-screen interface as Condition 2 with clickable citations.
+                The screen is split: the AI summary is on the left, the source document on the
+                right. Each citation is a <strong>clickable button</strong> that jumps to and
+                highlights the relevant passage.
               </li>
               <li className="flex items-start gap-2">
                 <span className="mt-1 w-1.5 h-1.5 rounded-full bg-violet-400 flex-shrink-0" />

@@ -5,7 +5,7 @@ import { useTelemetry } from "../contexts/TelemetryContext";
 
 export default function CompletePage() {
   const navigate = useNavigate();
-  const { logs, participantId, sequenceOrder, resetSession } = useTelemetry();
+  const { logs, participantId, sequenceLabel, resetSession } = useTelemetry();
   const lastLog = logs[logs.length - 1];
 
   function handleNewSession() {
@@ -37,40 +37,23 @@ export default function CompletePage() {
                 <span className="font-medium text-slate-800">{participantId}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Sequence</span>
-                <span className="font-medium text-slate-800">{sequenceOrder}</span>
+                <span className="text-slate-500">Task sequence</span>
+                <span className="font-medium text-slate-800">{sequenceLabel}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Final condition</span>
-                <span className="font-medium text-slate-800">{lastLog.condition_id}</span>
+                <span className="text-slate-500">Tasks completed</span>
+                <span className="font-medium text-slate-800">{logs.length}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Decision time</span>
+                <span className="text-slate-500">Last decision time</span>
                 <span className="font-medium text-slate-800">
                   {(lastLog.time_to_decision_ms / 1000).toFixed(1)}s
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Citation clicks</span>
-                <span className="font-medium text-slate-800">{lastLog.citation_clicks_count}</span>
+                <span className="text-slate-500">Your last answer</span>
+                <span className="font-medium text-slate-800">{lastLog.given_answer}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Your answer</span>
-                <span
-                  className={`font-semibold ${
-                    lastLog.caught_hallucination ? "text-green-700" : "text-red-600"
-                  }`}
-                >
-                  {lastLog.given_answer}
-                  {lastLog.caught_hallucination ? " ✓ Caught hallucination" : " ✗ Missed hallucination"}
-                </span>
-              </div>
-              {!lastLog.caught_hallucination && (
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Correct answer was</span>
-                  <span className="font-semibold text-green-700">{lastLog.correct_answer}</span>
-                </div>
-              )}
             </div>
           </div>
         )}
