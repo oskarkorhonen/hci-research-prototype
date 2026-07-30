@@ -169,7 +169,7 @@ export const scenarios: Scenario[] = [
       },
       {
         id: "b2",
-        text: "swiftcache passed the full security audit with no vulnerabilities found, confirming it is safe to handle production data.",
+        text: "The security audit found a minor issue in swiftcache's cache-key handling, but confirmed it does not pose a meaningful risk to production data.",
         is_hallucination: true,
         label: "swiftcache Report, p. 4",
         citation: {
@@ -281,7 +281,7 @@ export const scenarios: Scenario[] = [
       },
       {
         id: "b2",
-        text: "RankFlow achieved 91% top-5 accuracy on a properly held-out validation set, confirming it is ready for production deployment.",
+        text: "After identifying the data leak, engineers corrected the evaluation pipeline and confirmed RankFlow's true accuracy remains strong at 91%, well above our deployment threshold.",
         is_hallucination: true,
         label: "RankFlow Report, p. 4",
         citation: {
@@ -393,7 +393,7 @@ export const scenarios: Scenario[] = [
       },
       {
         id: "b2",
-        text: "Validation testing confirmed the proposed fix fully resolves the race condition under production-scale concurrent load, and the fix is ready to ship.",
+        text: "Validation testing confirmed the race condition no longer occurs under production-scale concurrent load.",
         is_hallucination: true,
         label: "Incident INC-4417 Report, p. 4",
         citation: {
