@@ -1,79 +1,96 @@
-import React from "react";
-import { useNavigate } from "react-router-dom";
-import { CheckCircle, RotateCcw } from "lucide-react";
-import { useTelemetry } from "../contexts/TelemetryContext";
+import { useEffect, useRef, useState } from "react";
+import PageShell, { Card, PrimaryButton } from "../components/PageShell";
+import { useStudy } from "../contexts/StudyContext";
+import { TRIAL_COUNT } from "../study/design";
+import { sessionFileName } from "../study/session";
+import { downloadJson } from "../study/storage";
+
+type CopyState = "idle" | "copied" | "failed";
+
+const COPY_MESSAGES: Record<CopyState, string> = {
+  idle: "",
+  copied: "Copied. Paste it into a message to the researcher.",
+  failed: "Copying did not work in this browser. Please use the download button.",
+};
 
 export default function CompletePage() {
-  const navigate = useNavigate();
-  const { logs, participantId, sequenceLabel, resetSession } = useTelemetry();
-  const lastLog = logs[logs.length - 1];
+  const { lastCompleted, dismissCompleted } = useStudy();
+  const hasDownloaded = useRef(false);
+  const [copyState, setCopyState] = useState<CopyState>("idle");
 
-  function handleNewSession() {
-    resetSession();
-    navigate("/");
+  useEffect(() => {
+    if (!lastCompleted || hasDownloaded.current) return;
+    hasDownloaded.current = true;
+    downloadJson(sessionFileName(lastCompleted), lastCompleted);
+  }, [lastCompleted]);
+
+  if (!lastCompleted) {
+    return null;
+  }
+
+  const record = lastCompleted;
+  const fileName = sessionFileName(record);
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(record));
+      setCopyState("copied");
+    } catch {
+      setCopyState("failed");
+    }
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-      <div className="w-full max-w-md space-y-6 text-center">
+    <PageShell title="Thank you" subtitle="You have finished the study.">
+      <Card>
+        <p className="text-sm text-slate-700">
+          You made{" "}
+          <strong className="text-slate-900">
+            {record.score} of {TRIAL_COUNT}
+          </strong>{" "}
+          correct decisions.
+        </p>
+      </Card>
 
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 text-green-600 mx-auto">
-          <CheckCircle size={36} />
-        </div>
+      <Card>
+        <h2 className="text-sm font-semibold text-slate-800">One last step: send your results</h2>
+        <p className="text-sm text-slate-700 leading-relaxed">
+          A file named <strong>{fileName}</strong> has been saved to your downloads folder. Please
+          send it to the researcher who invited you. Your answers are only in that file. Nothing
+          was uploaded anywhere.
+        </p>
+        <PrimaryButton onClick={() => downloadJson(fileName, record)}>
+          Download the results file again
+        </PrimaryButton>
+        <button
+          type="button"
+          onClick={handleCopy}
+          className="w-full py-2.5 rounded-xl font-semibold text-sm text-slate-700 border border-slate-300 hover:bg-slate-100 transition-colors"
+        >
+          Or copy the results as text
+        </button>
+        <p className="text-sm text-slate-600 min-h-[1.25rem]" role="status">
+          {COPY_MESSAGES[copyState]}
+        </p>
+      </Card>
 
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">Task Complete</h1>
-          <p className="mt-2 text-slate-500 text-sm">
-            Thank you for participating. Your responses have been recorded.
-          </p>
-        </div>
+      <Card>
+        <h2 className="text-sm font-semibold text-slate-800">What the study was about</h2>
+        <p className="text-sm text-slate-700 leading-relaxed">
+          In half of the tasks the AI summary contained one statement that contradicted the
+          report. The study compares how well the three interfaces help people notice that. All
+          reports, products and incidents were invented for the study.
+        </p>
+        <p className="text-sm text-slate-700 leading-relaxed">
+          Please do not describe the tasks to anyone who might still take part.
+        </p>
+      </Card>
 
-        {lastLog && (
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm px-6 py-5 text-left space-y-3">
-            <h3 className="text-sm font-semibold text-slate-700">Session Summary</h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-slate-500">Participant</span>
-                <span className="font-medium text-slate-800">{participantId}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Task sequence</span>
-                <span className="font-medium text-slate-800">{sequenceLabel}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Tasks completed</span>
-                <span className="font-medium text-slate-800">{logs.length}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Last decision time</span>
-                <span className="font-medium text-slate-800">
-                  {(lastLog.time_to_decision_ms / 1000).toFixed(1)}s
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Your last answer</span>
-                <span className="font-medium text-slate-800">{lastLog.given_answer}</span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className="flex gap-3">
-          <button
-            onClick={handleNewSession}
-            className="flex-1 py-3 flex items-center justify-center gap-2 rounded-xl border-2 border-slate-300 text-slate-700 hover:bg-slate-100 font-semibold text-sm transition-colors"
-          >
-            <RotateCcw size={15} />
-            New Session
-          </button>
-          <button
-            onClick={() => navigate("/admin")}
-            className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm transition-colors"
-          >
-            View Admin / Export
-          </button>
-        </div>
-      </div>
-    </div>
+      <p className="text-center text-xs text-slate-400">
+        <button type="button" onClick={dismissCompleted} className="underline hover:text-slate-600">
+          Researcher: return to the start page
+        </button>
+      </p>
+    </PageShell>
   );
 }
